@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<form action="{{ url_for('register') }}" method="get">
+      <button name="register" type="submit">Register</button>
+  
+    </form>
+<br>
+{{ error }}
+<form method="POST" action="{{ url_for('login_auth') }}">
+  <table>
+    <tr>
+      <td>
+	{{ form.username.label }}
+      </td>
+      <td>
+	{{ form.username }}
+      </td>
+    </tr>
+    <tr>
+      <td>
+	{{ form.password.label }}
+      </td>
+      <td>
+	{{ form.password }}
+      </td>
+    </tr>
+    
+      {{ form.csrf_token }}
+      {% if next is not none %}
+    <input  type="hidden" name="next" value="{{next}}">
+    {% endif %}
+    <tr>
+      <td colspan="2">
+	<input type="submit" value="Login"/>
+      </td>
+    </tr>
+</form>
+
+{% endblock %}

@@ -1,0 +1,88 @@
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <link href="https://developer.snapappointments.com/bootstrap-select/A.ajax,,_libs,,_highlight.js,,_9.15.6,,_css,,_github.min.css+css,,_base.css+css,,_custom.css+dist,,_css,,_bootstrap-select.min.css,Mcc.MsOMCVf2_h.css.pagespeed.cf.zpjYFY_U7q.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ url_for('static', filename='header.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='file-icon-classic.css') }}">
+  </head>
+<title>Vertaisarvionti</title>
+</head>
+<body>
+  <nav class="navbar navbar-expand navbar-light mt-0" style="background-color: #5e5a59;">
+    
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('courses') }}">Kurssini</a>
+        </li>
+        {% if current_user.role == 'USER' %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('enlist_course') }}">Rekisteröidy Kurssille</a>
+        </li>
+        {% endif %}
+      </ul>
+
+
+    </div>
+    <!-- <div class="navbar-collapse collapse w-100 order-3 dual-collapse2"> -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ml-auto">
+        {% if current_user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link" id="name">Hei {{current_user.first_name}}!</a>
+        </li>
+
+        
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('logout_auth') }}">Kirjaudu Ulos</a>
+        </li>
+        
+        {% if current_user.role == 'TEACHER' %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('new_course') }}">Uusi Kurssi</a>
+        </li>
+        {% endif %}
+        
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('login_auth') }}">Kirjaudu Sisään</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('register') }}">Rekisteröidy</a>
+        </li>
+        {% endif %}
+    </div>
+  </nav>
+
+
+
+  <!-- <main role="main" class="container-fluid ml-3" style="overflow-x: hidden;"></main> -->
+    {% block body %}
+    
+      stuff comes here
+    
+    {% endblock %}
+  <!-- </main> -->
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+  <script src="https://developer.snapappointments.com/bootstrap-select/ajax/libs/highlight.js/9.15.6/js/highlight.pack.js.pagespeed.jm.dO4qkBpHzz.js"></script>
+  <script src="https://developer.snapappointments.com/bootstrap-select/dist,_js,_bootstrap-select.min.js+search,_main.js+js,_base.js.pagespeed.jc.NhC9Amf2oQ.js"></script><script>eval(mod_pagespeed_2HaUiZdTC$);</script>
+</body>
+
+</html>

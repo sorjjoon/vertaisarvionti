@@ -1,0 +1,42 @@
+from flask import render_template, request, redirect, url_for, session
+from flask_wtf import FlaskForm
+from application import db, app
+from wtforms import StringField, PasswordField, validators, ValidationError, BooleanField
+
+import datetime
+from flask_login import login_user, logout_user, login_required, current_user
+from wtforms.fields.html5 import DateField
+from application.auth import account
+
+from application.domain.course import Course
+
+
+class CourseForm(FlaskForm):
+    name = StringField("Nimi", validators=[validators.DataRequired("Kurssin nimi ei voi olla tyhjä")])
+    description = StringField("Selite")
+    end_date = DateField("Loppupäivä", validators=[validators.DataRequired("Kurssin loppupäivä ei voi olla tyhjä")])
+
+    class Meta:
+        csrf = False
+
+
+
+@app.route("/new", methods=["GET", "POST"])
+@login_required
+def new_course():
+    if current_user.role != "TEACHER":
+        return redirect(url_for("index"))
+
+    if request.method == "GET":
+        return render_template("/teacher/new_course.html", form = CourseForm())
+    
+    form = CourseForm(request.form)
+    if not form.validate():
+        render_template("/teacher/new_course.html", form = form)
+    db.insert_course(Course(form.name.data, form.description.data, form.end_date.data, time_zone="Europe/Helsinki"), current_user.get_id())
+    return redirect(url_for("courses"))
+
+    
+    
+
+

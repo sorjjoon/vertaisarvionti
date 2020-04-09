@@ -1,0 +1,40 @@
+{% extends "layout.html" %} 
+{% block body %}
+
+
+
+<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " >
+    <h1>{{course.name}} </h1>
+    <p>{{course.description}} </p>
+</div>
+
+
+    
+    {% if course.assignments %}
+    
+    <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " >
+        <h1>Tulevat Tehtävät </h1>
+        {% for assig in course.assignments %}
+
+        <p>Palautuspäivä: {% if assig.deadline%}
+            {{assig.deadline}}
+            {% else %}
+            Ei palautuspäivää
+            {% endif %} 
+
+        </p>
+        <a href={{url_for('view_assig', course_id=course.id, assignment_id=assig.id) }}>{{assig.name}}</a>
+            
+
+
+        {% endfor %}
+
+    </div>
+    {% else %}
+    <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " >
+    <p>Kurssilla ei ole vielä julkaistu tehtäviä </p>
+</div>
+    {% endif %}
+
+
+{% endblock %}

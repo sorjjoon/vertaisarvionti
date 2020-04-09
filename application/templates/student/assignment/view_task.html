@@ -1,0 +1,22 @@
+
+        
+       {% extends "layout.html" %} 
+       {% block body %}
+       
+       <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " > 
+        
+        <p> {{  task.description}}</p>
+        <p>Max pisteet: {{  task.points}}</p>
+        <p>Liitteet: {% for file in task.files %}
+            <a href={{url_for('get_file', file_id=file.id) }}><span class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a> 
+            {% endfor %}</p>
+        <p>
+        </p>
+        
+
+
+    </div>
+    <form method="GET" action={{previous_url(request.url,2)}}>
+        <input type="submit" value="Takaisin">
+    </form>
+    {% endblock %}
