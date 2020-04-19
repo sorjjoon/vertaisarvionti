@@ -29,14 +29,14 @@ def update_username(self, new_username, user_id):
 
 def get_user_by_id(self, user_id: int):
     join_clause = self.account.join(self.role)
-    sql = select([self.role.c.name, self.account.c.username, self.account.c.first_name]).select_from(join_clause).where(self.account.c.id==user_id)
+    sql = select([self.role.c.name, self.account.c.username, self.account.c.first_name, self.account.c.last_name]).select_from(join_clause).where(self.account.c.id==user_id)
     with self.engine.connect() as conn:
         result_set = conn.execute(sql)
         row = result_set.fetchone()
         
         result_set.close()       
         if row is not None:
-            return account(user_id,row[self.account.c.username], row[self.role.c.name], row[self.account.c.first_name])
+            return account(user_id,row[self.account.c.username], row[self.role.c.name], row[self.account.c.first_name], row[self.account.c.last_name] )
         else:
             return None
         

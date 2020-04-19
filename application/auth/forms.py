@@ -39,10 +39,8 @@ class RegisterForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    username = StringField("Username", validators=[validators.DataRequired(message=None), validators.Length(
-        min=5, max=30, message="Username must be between 5 and 30 characters")])
-    password = PasswordField("Password", validators=[validators.DataRequired(message=None), validators.Length(
-        min=5, max=50, message="Password must be between 5 and 50 characters")])  # TODO password strength
+    username = StringField("Käyttäjänimi", validators=[validators.DataRequired(message=None)])
+    password = PasswordField("Salasana", validators=[validators.DataRequired(message=None)])  # TODO password strength
 
 
 @app.route("/auth/update/username", methods=["GET", "POST"])

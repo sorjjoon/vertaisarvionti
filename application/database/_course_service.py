@@ -5,6 +5,7 @@ from random import choice
 from application.domain.course import Course
 from application.domain.assignment import Assignment, Task
 from datetime import datetime
+
 def random_string(length: int):
     chars = ascii_uppercase
     result = ""
@@ -53,10 +54,8 @@ def select_course_details(self, course_id, student_id, is_student = True):
         if row is None:
             rs.close()
             return None     
-        c = Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], id=row[self.course.c.id])
+        c = Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], id=row[self.course.c.id], code = row[self.course.c.code], teacher_id = row[self.course.c.teacher_id] )
         rs.close()
-
-
     return c
 
 
@@ -66,14 +65,14 @@ def insert_course(self, course, teacher_id):
     sql = select([self.course.c.code]).where(self.course.c.code==code)
     with self.engine.connect() as conn:
         rs = conn.execute(sql)
-        row = rs.fetchone()
+        row = rs.first()
         while row is not None:
-            rs.close()
+            
             print("duplicate code")
             code = random_string(8)
             rs = conn.execute(sql)
-            row = rs.fetchone()
-        rs.close()
+            row = rs.first()
+        
         sql =self.course.insert().values(teacher_id=teacher_id, name=course.name, description=course.description, code=code, end_date = course.end_date)
         rs = conn.execute(sql)
         id = rs.inserted_primary_key[0]
@@ -81,13 +80,21 @@ def insert_course(self, course, teacher_id):
         return id, code
 
 def select_courses_teacher(self, teacher_id):
+
+    
     sql = select([self.course]).where(self.course.c.teacher_id== teacher_id)
     with self.engine.connect() as conn:
         rs = conn.execute(sql)
         courses = []
         for row in rs:
+            
             courses.append(Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], code=row[self.course.c.code], id = row[self.course.c.id]))
-        rs.close()
+            j = self.task.outerjoin(self.course)
+            sql = select([func.min(self.task.c.deadline)]).select_from(j).where(self.course.c.id == row[self.course.c.id] & self.task.c.deadline > func.now())
+            rs = conn.execute(sql)
+            min = rs.first()[0] 
+            courses[len(courses)-1].min = min
+
     return courses
 
 

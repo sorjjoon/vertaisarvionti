@@ -6,11 +6,12 @@ from wtforms import StringField, PasswordField
 
 
 class account:
-    def __init__(self, id, name, role, first_name):
+    def __init__(self, id, name, role, first_name, last_name):
         self.id = id
         self.name = name
         self.role = role
         self.first_name=first_name
+        self.last_name = last_name
 
     def get_id(self):
         return self.id
@@ -28,4 +29,4 @@ class account:
         return str(self.id)+" "+self.name
 
     def get_role(self):
-        return role
+        return self.role

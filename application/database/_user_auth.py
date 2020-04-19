@@ -13,14 +13,14 @@ def get_user(self, username: str, password: str):
     hashed = self.hash_password(password, username=username)
     sql = select([self.account]).where(self.account.c.username ==
                                        username).where(self.account.c.password == hashed)
-    print(self.hash_password(password, username=username))
+    
     with self.engine.connect() as conn:
         result_set = conn.execute(sql)
         row = result_set.fetchone()
         result_set.close()
         if row is not None:
             print("Login for "+username+" success")
-            return account(row[self.account.c.id], row[self.account.c.username], row[self.account.c.password], row[self.account.c.first_name])
+            return account(row[self.account.c.id], row[self.account.c.username], row[self.account.c.password], row[self.account.c.first_name], row[self.account.c.last_name])
         else:
             print("Login for "+username+" failed")
             return None

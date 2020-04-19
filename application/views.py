@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 import io
 from timeit import default_timer as timer
+from application.domain.course import Course
 
          # try:
         #     previous = current_url[:current_url.rindex("/")]
@@ -40,8 +41,11 @@ def utility_processor():
 
 @app.route("/")
 def index():
-
-    return render_template("index.html")
+    if current_user.is_authenticated:
+        return redirect(url_for("courses"))
+    else:
+        return redirect(url_for("login_auth"))
+    #return render_template("index.html")
 
 @app.route("/enlist", methods = ["GET", "POST"])
 @login_required
@@ -56,17 +60,27 @@ def enlist_course():
         db.enlist_student(request.form.get("code"), current_user.get_id())
         return redirect(url_for("courses"))
     except ValueError as e:
+        print(e)
         return render_template("/student/enlist.html", error="Koodillasi ei löytynyt kurssia")
     except IntegrityError as e:
+        print(e)
         return render_template("/student/enlist.html", error="Olet jo ilmoittautunut tälle kurssille")
 
+
+def set_course_counts(courses:list, counts:list):
+    for c in counts:
+        id = c[0]
+        for course in courses:
+            if course.id == id:
+                course.count = c[1]
+                break
 
 @app.route("/courses")
 @login_required
 def courses():
     if current_user.role =="TEACHER":
         courses = db.select_courses_teacher(current_user.get_id())
-
+        set_course_counts(courses, db.count_students(current_user.get_id()))
         return render_template("/teacher/teacher_list.html", courses=courses)
     else:
         courses = db.select_courses_student(current_user.get_id())
@@ -79,17 +93,27 @@ def view_course(course_id):
         course = db.select_course_details(course_id, current_user.get_id())
         db.set_assignments(course)
         course.set_timezones("Europe/Helsinki")
-        return render_template("/student/course.html", course = course)
+        teacher = None
+        if course is not None:
+            teacher = db.get_user_by_id(course.teacher_id)
+
+        return render_template("/student/course.html", course = course, teacher = teacher)
     elif request.args.get("s")=="1":
         course = db.select_course_details(course_id, current_user.get_id(), is_student=False)
         db.set_assignments(course)
         course.set_timezones("Europe/Helsinki")
-        return render_template("/student/course.html", course = course)
+        teacher = None
+        if course is not None:
+            teacher = db.get_user_by_id(course.teacher_id)
+        return render_template("/student/course.html", course = course, teacher=teacher)
     else:
         course = db.select_course_details(course_id, current_user.get_id(), is_student=False)
         db.set_assignments(course)
         course.set_timezones("Europe/Helsinki")
-        return render_template("/teacher/course/course.html", id = course_id)
+        teacher = None
+        if course is not None:
+            teacher = db.get_user_by_id(course.teacher_id)
+        return render_template("/teacher/course/course.html", id = course_id, teacher=teacher)
 
 
 
@@ -99,6 +123,9 @@ def view_course(course_id):
 def view_course_students(course_id):
     students = db.select_students(course_id, current_user.get_id())
     return render_template("/teacher/course/students.html", students = students)
+    
+
+
     
 
 @app.route("/get/<int:file_id>")
@@ -121,13 +148,22 @@ def view_assig(course_id, assignment_id): #TODO rights validations (remember rev
     return render_template("/student/assignment/view.html", assignment=assignment, done_string = str(len(assignment.submits))+"/"+str(len(assignment.tasks)))
 
 
-@app.route("/view/<course_id>/assignment/<assignment_id>/task/<task_id>")
+@app.route("/view/<course_id>/assignment/<assignment_id>/task/<task_id>", methods=["GET", "POST"])
 @login_required
 def view_task(course_id, assignment_id, task_id):
-    assignment = db.select_assignment(assignment_id, task_id=task_id)
-    try:
-        task = assignment.tasks[0] #all assigs have at least 1 task, so will happen for manual urls
-    except:
-        return redirect(url_for("index"))
-    task.files = db.select_file_details(task_id=task.id)
-    return render_template("/student/assignment/view_task.html" , task = task)
+    if request.method == "GET":
+        assignment = db.select_assignment(assignment_id, task_id=task_id)
+        
+        try:
+            task = assignment.tasks[0] #all assigs have at least 1 task, so will only happen for manual urls
+        except:
+            return redirect(url_for("index"))
+        db.set_submits(assignment, task_id=task.id)
+
+        task.files = db.select_file_details(task_id=task.id)
+        return render_template("/student/assignment/view_task.html" ,course_id=course_id, task = task, assignment=assignment)
+    else:
+
+        files = request.files.getlist("files")
+        db.update_submit(current_user.get_id(),task_id, assignment_id, files)
+        return redirect(url_for("view_assig", course_id=course_id, assignment_id=assignment_id))

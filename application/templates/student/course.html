@@ -3,31 +3,46 @@
 
 
 
-<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " >
-    <h1>{{course.name}} </h1>
+<div class="container-fluid pl-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " >
+    <h2>{{course.name}} </h2>
     <p>{{course.description}} </p>
+    <p> Opettaja: {{teacher.name}}, {{teacher.last_name}} </p>
 </div>
 
 
     
     {% if course.assignments %}
     
-    <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " >
-        <h1>Tulevat Tehtävät </h1>
+    <div id="course_inc" class="container pl-2 pt-4 pb-2" >
+        <div class="row">
+            <div class="col">
+                <h1>Tulevat Tehtävät </h1>
         {% for assig in course.assignments %}
-
+                <table id=assig_table >
+                    <tr>
+                        <td>
+                    <a href={{url_for('view_assig', course_id=course.id, assignment_id=assig.id) }}>{{assig.name}}</a>
+                </td>
+                </tr>
+                    <tr>
+                        <td>
         <p>Palautuspäivä: {% if assig.deadline%}
-            {{assig.deadline}}
+            {{assig.deadline.strftime("%d.%m.%y, %H:%M")}}
+        </p>
+                        <p><small>{{assig.get_deadline_string()}}</small></p>
             {% else %}
             Ei palautuspäivää
             {% endif %} 
+        </td>
+        </tr>
+        
 
-        </p>
-        <a href={{url_for('view_assig', course_id=course.id, assignment_id=assig.id) }}>{{assig.name}}</a>
-            
-
-
+    </table>
         {% endfor %}
+
+            </div>
+        </div>
+        
 
     </div>
     {% else %}
