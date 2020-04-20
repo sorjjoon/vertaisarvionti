@@ -1,1 +1,14 @@
 /venv
+/venv3
+/venv2
+__pycache__
+data.db
+
+.vscode
+!/documentation
+!requirements.txt
+procfile
+*.pyc
+*.json
+# all mains used for testing are called main.py (actual app started with run.py)
+main.py
