@@ -40,7 +40,15 @@ class AssignmentForm(FlaskForm):
 
 @app.route("/view/<course_id>/new", methods = ["GET", "POST"])
 @login_required
-def new_assignment(course_id):
+def new_assignment(course_id:int):
+    """[summary]
+    
+    Arguments:
+        course_id {int} -- []
+    
+    Returns:
+        [type] -- [description]
+    """
     if current_user.role =="USER":
         return redirect(url_for("course", course_id=course_id))
     

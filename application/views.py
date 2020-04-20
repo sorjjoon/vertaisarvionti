@@ -40,7 +40,7 @@ def utility_processor():
 
 @app.route("/")
 def index():
-
+    
     return render_template("index.html")
 
 @app.route("/enlist", methods = ["GET", "POST"])
