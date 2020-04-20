@@ -1,13 +1,13 @@
 from flask import render_template, request, redirect, url_for, session
 from flask_wtf import FlaskForm
-from application import db, app
+#from application import db, app
 from wtforms import StringField, PasswordField, validators, ValidationError, BooleanField
-
+from flask import current_app as app
 import datetime
 from flask_login import login_user, logout_user, login_required, current_user
 from wtforms.fields.html5 import DateField
 from application.auth import account
-
+from app import db
 from application.domain.course import Course
 
 

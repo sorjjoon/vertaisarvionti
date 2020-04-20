@@ -1,9 +1,9 @@
 from flask import render_template, request, redirect, url_for, session
-
-from application import db, app
+from flask import current_app as app
+#from application import db, app
 from flask_login import login_user, logout_user, login_required, current_user
 
-
+from app import db
 
 @app.route("/users", methods=["GET"])
 @login_required

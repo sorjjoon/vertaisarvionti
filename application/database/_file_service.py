@@ -135,14 +135,17 @@ def select_file_details(self, assignment_id=None, task_id=None, file_id = None):
     
     if file_id is not None:
         sql = sql.where(self.file.c.id == file_id)
-
+    print(sql)
     with self.engine.connect() as conn:
         rs = conn.execute(sql)
         results = []
         for row in rs:
+            print("row id")
+            print(row[self.file.c.id])
             results.append(File(row[self.file.c.id], row[self.file.c.name], row[self.file.c.upload_date]))
         rs.close()
-
+    print("results length")
+    print(len(results))
     return results
 
 def delete_file(self, file_id, owner_id):

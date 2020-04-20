@@ -60,7 +60,9 @@ def select_assignment(self, assignment_id, task_id = None):
         for row in rs:
             if row is None:
                 continue
+            print("adding to assig file "+str(row[self.file.c.id]))
             assig.files.append( File(row[self.file.c.id],row[self.file.c.name], row[self.file.c.upload_date]) )
+        rs.close()
     return assig
 
 

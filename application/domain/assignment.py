@@ -101,6 +101,9 @@ class File():
 
     def set_timezones(self, time_zone:str):
         self.date = self.date.astimezone(pytz.timezone(time_zone))
+
+    def __str__(self):
+        return "id: "+str(self.id)+"name: "+self.name
         
 
 

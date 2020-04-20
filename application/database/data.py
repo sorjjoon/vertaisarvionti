@@ -11,7 +11,7 @@ from sqlalchemy.sql import func
 
 
 class data:
-    def __init__(self, used_engine: engine):
+    def __init__(self, used_engine: engine, create= True):
         if not os.environ.get("HEROKU"):
             # sqlite doesn't enforce foreign keys by default, turning them on to enforce cascade
             def _fk_pragma_on_connect(dbapi_con, con_record):
@@ -21,7 +21,6 @@ class data:
             event.listen(used_engine, 'connect', _fk_pragma_on_connect)
 
         metadata = MetaData(used_engine)
-
         self.account = Table('account', metadata,
                              Column("id", Integer, primary_key=True),
                              Column("role_id", Integer,  ForeignKey(
@@ -123,38 +122,39 @@ class data:
         
         
         )
-
+        
 
         self.engine=used_engine
-        metadata.create_all()  # checks if table exsists first
+        if create:
+            metadata.create_all()  # checks if table exsists first
 
         # insert 1 admin user, and roles "USER" and "ADMIN to the database (if they don't exsist)"
 
-        with self.engine.connect() as conn:
-            sql=self.role.insert().values(name = "USER", id = 1)
+            with self.engine.connect() as conn:
+                sql=self.role.insert().values(name = "USER", id = 1)
 
-            # catches unqiue contraint fail
-            try:
+                # catches unqiue contraint fail
+                try:
 
-                conn.execute(sql)
-                print("user role inserted")
-            except:
-                pass
-            sql=self.role.insert().values(name = "ADMIN", id = 2)
-            try:
-                conn.execute(sql)
-                print("admin role inserted")
+                    conn.execute(sql)
+                    print("user role inserted")
+                except:
+                    pass
+                sql=self.role.insert().values(name = "ADMIN", id = 2)
+                try:
+                    conn.execute(sql)
+                    print("admin role inserted")
 
-            except:
-                pass
+                except:
+                    pass
 
-            sql=self.role.insert().values(name = "TEACHER", id = 3)
-            try:
-                conn.execute(sql)
-                print("admin role inserted")
+                sql=self.role.insert().values(name = "TEACHER", id = 3)
+                try:
+                    conn.execute(sql)
+                    print("admin role inserted")
 
-            except:
-                pass
+                except:
+                    pass
 
     from ._user_service import delete_user, get_user_by_id, check_user, update_username
     from ._user_auth import get_user, hash_password, insert_user, update_password, get_role_id

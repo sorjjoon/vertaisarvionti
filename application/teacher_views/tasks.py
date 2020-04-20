@@ -1,16 +1,16 @@
 from flask_wtf import FlaskForm
-from application import db, app
+#from application import db, app
 from wtforms import StringField, IntegerField, validators, ValidationError, BooleanField, FormField, FieldList, TextAreaField
 from wtforms import MultipleFileField, FileField
 from datetime import datetime, timezone
-
+from flask import current_app as app
 from wtforms.fields.html5 import DateTimeField
 import pytz
 import datetime
 from flask import render_template, redirect, url_for, request
 import os 
 from flask_login import login_user, logout_user, login_required, current_user
-
+from app import db
 class TaskForm(FlaskForm):
     task_files = MultipleFileField(label="Tehtävän aineistoja") 
     brief = TextAreaField(label = "Tehtävänanto")

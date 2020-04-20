@@ -1,8 +1,9 @@
 
-from application import db, app
+#from application import db, app
 
 from datetime import datetime, timezone
-
+from flask import current_app as app
+from app import db
 import pytz
 import datetime
 from flask import render_template, redirect, url_for, request

@@ -1,12 +1,13 @@
 
-from application import app, db
+#from application import app, db
 from flask import render_template, redirect, url_for, request, Response, send_file
+from flask import current_app as app
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 import io
 from timeit import default_timer as timer
 from application.domain.course import Course
-
+from app import db
          # try:
         #     previous = current_url[:current_url.rindex("/")]
         #     with app.test_client() as tc:
@@ -105,6 +106,7 @@ def view_course(course_id):
         teacher = None
         if course is not None:
             teacher = db.get_user_by_id(course.teacher_id)
+            print(teacher)
         return render_template("/student/course.html", course = course, teacher=teacher)
     else:
         course = db.select_course_details(course_id, current_user.get_id(), is_student=False)
@@ -113,6 +115,7 @@ def view_course(course_id):
         teacher = None
         if course is not None:
             teacher = db.get_user_by_id(course.teacher_id)
+
         return render_template("/teacher/course/course.html", id = course_id, teacher=teacher)
 
 
@@ -159,8 +162,9 @@ def view_task(course_id, assignment_id, task_id):
         except:
             return redirect(url_for("index"))
         db.set_submits(assignment, task_id=task.id)
-
+        print(assignment.files)
         task.files = db.select_file_details(task_id=task.id)
+        
         return render_template("/student/assignment/view_task.html" ,course_id=course_id, task = task, assignment=assignment)
     else:
 

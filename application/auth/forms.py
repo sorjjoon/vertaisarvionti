@@ -1,6 +1,8 @@
 from flask import render_template, request, redirect, url_for, session
 from flask_wtf import FlaskForm
-from application import db, app
+#from application import db, app
+from app import db
+from flask import current_app as app
 from wtforms import StringField, PasswordField, validators, ValidationError, BooleanField
 
 from flask_login import login_user, logout_user, login_required, current_user
@@ -79,6 +81,7 @@ def register():
 @app.route("/auth/login", methods=["GET", "POST"])
 def login_auth():
     if request.method == "GET":
+        print(db.engine)
         
         return render_template("auth/login.html", form=LoginForm(), next = request.args.get("next"))
 

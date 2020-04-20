@@ -79,9 +79,7 @@ def insert_course(self, course, teacher_id):
         rs.close()
         return id, code
 
-def select_courses_teacher(self, teacher_id):
-
-    
+def select_courses_teacher(self, teacher_id):    
     sql = select([self.course]).where(self.course.c.teacher_id== teacher_id)
     with self.engine.connect() as conn:
         rs = conn.execute(sql)
@@ -89,8 +87,8 @@ def select_courses_teacher(self, teacher_id):
         for row in rs:
             
             courses.append(Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], code=row[self.course.c.code], id = row[self.course.c.id]))
-            j = self.task.outerjoin(self.course)
-            sql = select([func.min(self.task.c.deadline)]).select_from(j).where(self.course.c.id == row[self.course.c.id] & self.task.c.deadline > func.now())
+            j = self.assignment.outerjoin(self.course)
+            sql = select([func.min(self.assignment.c.deadline)]).select_from(j).where((self.course.c.id == row[self.course.c.id]) & (self.assignment.c.deadline > func.now()))
             rs = conn.execute(sql)
             min = rs.first()[0] 
             courses[len(courses)-1].min = min
