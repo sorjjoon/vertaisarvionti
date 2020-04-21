@@ -1,0 +1,126 @@
+{% extends "layout.html" %}
+{% block body %}
+
+
+<div class="container-fluid pl-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+    <h2>{{course.name}} </h2>
+</div>
+
+
+
+{% if course.assignments %}
+
+<div id="course_inc" class="container pl-2 pt-4 pb-2">
+    <div class="row">
+        <div class="col">
+            <h2>Tulevat Tehtävät </h2>
+            {% for assig in course.future %}
+            <table id=over_view_assig_table class="table table-sm">
+                <tr>
+                    <td>
+                        <a
+                            href={{url_for('assignment_overview', course_id=course.id, assignment_id=assig.id) }}>{{assig.name}}</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <p>Palautuspäivä: {% if assig.deadline%}
+                            {{assig.deadline.strftime("%d.%m.%y, %H:%M")}}
+                        </p>
+                        <p><small>{{get_deadline_string(assig.deadline)}}</small></p>
+                        {% else %}
+                        Ei palautuspäivää
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <p>Näkyy Opiskeljoille:
+                            {{assig.reveal.strftime("%d.%m.%y, %H:%M")}}
+                        </p>
+                        <p><small>{{get_deadline_string(assig.reveal)}}</small></p>
+
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <p>Oikeat vastaukset asetettu: {{assig.answers|length}}/{{assig.tasks|length}}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <p>Vertaisarvionti: emt</p>
+                    </td>
+                </tr>
+            </table>
+            {% endfor %}
+
+        </div>
+    </div>
+
+
+</div>
+
+
+<div id="course_inc" class="container pl-2 pt-4 pb-2">
+    <div class="row">
+        <div class="col">
+            <h2>Menneet Tehtävät </h2>
+            {% for assig in course.past %}
+            <table id=over_view_assig_table class="table table-sm">
+                <tr>
+                    <td>
+                        <a
+                            href={{url_for('view_assig', course_id=course.id, assignment_id=assig.id) }}>{{assig.name}}</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <p>Palautuspäivä: {% if assig.deadline%}
+                            {{assig.deadline.strftime("%d.%m.%y, %H:%M")}}
+                        </p>
+                        <p><small>{{get_deadline_string(assig.deadline)}}</small></p>
+                        {% else %}
+                        Ei palautuspäivää
+                        {% endif %}
+                    </td>
+                </tr>
+                <td>
+                    <p>Näkyy Opiskeljoille:
+                        {{assig.reveal.strftime("%d.%m.%y, %H:%M")}}
+                    </p>
+                    <p><small>{{get_deadline_string(assig.reveal)}}</small></p>
+
+                </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <p>Oikeat vastaukset asetettu: {{assig.answers|length}}/{{assig.tasks|length}}</p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <p>Vertaisarvionti: emt</p>
+                    </td>
+                </tr>
+
+            </table>
+            {% endfor %}
+
+        </div>
+    </div>
+
+
+</div>
+{% else %}
+<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+    <p>Kurssilla ei ole vielä julkaistu tehtäviä </p>
+</div>
+{% endif %}
+
+
+{% endblock %}

@@ -7,7 +7,7 @@ import datetime
 from flask_login import login_user, logout_user, login_required, current_user
 from wtforms.fields.html5 import DateField
 from application.auth import account
-from app import db
+from application import db
 from application.domain.course import Course
 
 
@@ -25,6 +25,7 @@ class CourseForm(FlaskForm):
 @login_required
 def new_course():
     if current_user.role != "TEACHER":
+        print("non-teacher attempted insert")
         return redirect(url_for("index"))
 
     if request.method == "GET":
@@ -32,8 +33,15 @@ def new_course():
     
     form = CourseForm(request.form)
     if not form.validate():
+        print("validation failed")
         render_template("/teacher/new_course.html", form = form)
-    db.insert_course(Course(form.name.data, form.description.data, form.end_date.data, time_zone="Europe/Helsinki"), current_user.get_id())
+
+    date = form.end_date.data
+    if not date:
+        date = datetime.date.today()
+    print("attempting course insert")
+    id = db.insert_course(Course(form.name.data, form.description.data, form.end_date.data, time_zone="Europe/Helsinki"), current_user.get_id())
+    print("course "+form.name.data+" added. id, code = "+str(id))
     return redirect(url_for("courses"))
 
     

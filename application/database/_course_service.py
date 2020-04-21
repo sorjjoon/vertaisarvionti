@@ -17,7 +17,7 @@ def set_assignments(self, course: Course, for_student = True):
     if course is None:
         return
     j = self.assignment.join(self.task)
-    sql = select([self.assignment, self.task]).select_from(j).where(self.assignment.c.course_id == course.id).order_by(self.assignment.c.deadline, self.task.c.id) #todo nulls last
+    sql = select([self.assignment, self.task]).select_from(j).where(self.assignment.c.course_id == course.id).order_by(self.assignment.c.deadline, self.task.c.id) 
     if for_student:
         sql = sql.where(self.assignment.c.reveal < func.now())
         

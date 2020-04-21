@@ -1,0 +1,32 @@
+{% extends "layout.html" %} 
+{% block body %}
+
+<table class="table">
+    <thead>
+        <tr>
+
+            <th scope="col">Nimi</th>
+            
+            
+            
+            <th scope="col">Palautukset </th>
+
+            <th scope="col">Kok. pisteet </th>
+        </tr>
+    </thead>
+    <tbody>
+      {%for s in students%}
+        <tr>
+            
+            
+            <td>{{s.0}}</td>
+            
+            <td> {{s.1}} </td>
+
+            <td> {{s.2}} </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

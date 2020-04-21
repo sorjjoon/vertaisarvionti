@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+
+    <p>Palautuspäivä: {% if assignment.deadline%}
+        {{assignment.deadline.strftime("%d.%m.%y, %H:%M")}}
+    </p>
+    <p><small>{{get_deadline_string(assignment.deadline)}}</small></p>
+    {% else %}
+    <p>Ei palautuspäivää</p>
+    {% endif %}
+
+    <p> Kaikkien tehtävien materiaalit: {% for file in assignment.files %}
+        <a href={{url_for('get_file', file_id=file.id) }}><span
+                class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
+        {{ ",  " if not loop.last }}
+        {% endfor %}</p>
+    <p> {{ task.description}}</p>
+    <p>Max pisteet: {{task.points}}</p>
+    <p>Liitteet: {% for file in task.files %}
+        <a href={{url_for('get_file', file_id=file.id) }}><span
+                class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
+        {{ ", " if not loop.last }}
+        {% endfor %}</p>
+
+</div>
+{% if not answer %}
+<form method="POST" action="./set" enctype="multipart/form-data">
+    <table class="mt-4 mb-4">
+        
+              
+                  <tr>
+                    <td>
+                  {{ form.reveal.label }}
+                    </td>
+              
+                    <td>
+                  {{ form.reveal }}
+                    </td>
+                    <td>
+                          <ul>
+                            {% if reveal_error is defined %}
+                            <li>{{ reveal_error }}</li>
+                            {% endif %}
+                          </ul>
+                        </td>
+                  </tr>
+                  <tr>
+                    <td>
+                  {{ form.description.label }}
+                    </td>
+              
+                    <td>
+                      {{ form.description }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                  {{ form.files.label }}
+                    </td>
+              
+                    <td>
+                      {{ form.files }}
+                    </td>
+                  </tr>
+      
+                 
+                  {{ form.csrf_token }}
+          
+            
+            
+    </tbody>
+</table>
+    
+    <input type="submit" name="submit" value="Lisää malli">  
+</form>
+<table class="table">
+    <thead>
+        <tr>
+
+            <th scope="col">Opiskelijan nimi</th>
+            
+            <th scope="col">Palautus tehty </th>
+            
+            <th scope="col">Nykyiset pisteet </th>
+            
+            <th scope="col">Aseta pisteet </th>
+        </tr>
+    </thead>
+
+
+
+</table>
+{% else %}
+
+{% endif %}
+{% endblock %}

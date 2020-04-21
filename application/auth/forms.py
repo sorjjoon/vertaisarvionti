@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, session
 from flask_wtf import FlaskForm
 #from application import db, app
-from app import db
+from application import db
 from flask import current_app as app
 from wtforms import StringField, PasswordField, validators, ValidationError, BooleanField
 
@@ -66,7 +66,7 @@ def register():
         return render_template("auth/register.html", form=RegisterForm())
     form = RegisterForm(request.form)
     if not form.validate():  # form validation checks if username is free
-        return render_template("auth/register.html", form=form)
+        return render_template("auth/register.html", form=form), 409
     try:
         
         if form.student.data:
@@ -75,7 +75,7 @@ def register():
             db.insert_user(form.username.data, form.password.data, form.first_name.data, form.last_name.data, role="TEACHER")
         return redirect(url_for("index"))
     except ValueError:
-        return render_template("auth/register.html", form=RegisterForm(), error="Username in use")
+        return render_template("auth/register.html", form=RegisterForm(), error="Username in use"), 422
 
 
 @app.route("/auth/login", methods=["GET", "POST"])
@@ -89,7 +89,7 @@ def login_auth():
 
     user = db.get_user(form.username.data, form.password.data)
     if user is None:
-        return render_template("auth/login.html", form=form, error="No such username or password")
+        return render_template("auth/login.html", form=form, error="No such username or password"), 401
 
     login_user(user)
     print("User " + form.username.data + " validated")

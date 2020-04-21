@@ -10,7 +10,7 @@ import datetime
 from flask import render_template, redirect, url_for, request
 import os 
 from flask_login import login_user, logout_user, login_required, current_user
-from app import db
+from application import db
 class TaskForm(FlaskForm):
     task_files = MultipleFileField(label="Tehtävän aineistoja") 
     brief = TextAreaField(label = "Tehtävänanto")
@@ -42,6 +42,7 @@ class AssignmentForm(FlaskForm):
 @login_required
 def new_assignment(course_id):
     if current_user.role =="USER":
+        print("Student attempted to insert assignment")
         return redirect(url_for("course", course_id=course_id))
     
 
@@ -49,17 +50,20 @@ def new_assignment(course_id):
         return render_template("/teacher/assignment/new.html", id = course_id, form = AssignmentForm())
     
     
-
+    print("attempting assignemnt add")
     form = AssignmentForm(request.form)
     if request.form.get("more") is not None:
         form.tasks.append_entry()
+        print("returning more tasks")
         return render_template("/teacher/assignment/new.html", id = course_id, form = form)
     if form.reveal.data is not None and form.deadline.data is not None and form.deadline.data < form.reveal.data:
+        print("date validations failed")
         return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Deadline ei voi olla ennen kuin tehtävä näkyy opiskelijoille!")
     files = request.files.getlist("files")
-    
+    print("Adding assignment")
     for file in files:
-        if not check_file(file):    
+        if not check_file(file):  
+            print("File max size reached")  
             return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Yhden lataamasi tiedoston koko oli liian suuri (max 100 Mb)")
 
     deadline = None
@@ -72,23 +76,26 @@ def new_assignment(course_id):
     if form.reveal.data is not None:
         reveal = pytz.timezone("Europe/Helsinki").localize(form.reveal.data)
         
-        
-
-    assig_id = db.insert_assignment(current_user.get_id(), course_id,form.name.data ,deadline , reveal , files)
     i = 0
     for task in form.tasks.data:
         files = request.files.getlist("tasks-"+str(i)+"-task_files")
         for file in files:
-            if not check_file(file):    
+            if not check_file(file):  
+                print("File max size reached")    
                 return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Yhden lataamasi tiedoston koko oli liian suuri (max 100 Mb)")
-        i+=1
+        i+=1    
+    print("attempting insert")
+    assig_id = db.insert_assignment(current_user.get_id(), course_id,form.name.data ,deadline , reveal , files)
+    print("insert successfull")
     i =0
     for task in form.tasks.data:
         
         files = request.files.getlist("tasks-"+str(i)+"-task_files")
         
         i+=1
+        print("inserting tasks")
         db.insert_task(current_user.get_id(), assig_id, task.get("brief"), task.get("points"), files)
+    print("Everthing inserted! Assignment inserted")
     return redirect(url_for("index"))
 
 

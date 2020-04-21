@@ -1,7 +1,7 @@
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, select, update, outerjoin )
 import datetime
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 from application.domain.assignment import Assignment, Task, Submit, File
 from sqlalchemy import func
 

@@ -5,9 +5,11 @@ from flask import current_app as app
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 import io
+import datetime
+import pytz
 from timeit import default_timer as timer
 from application.domain.course import Course
-from app import db
+from application import db
          # try:
         #     previous = current_url[:current_url.rindex("/")]
         #     with app.test_client() as tc:
@@ -27,6 +29,42 @@ def utility_processor():
         except:
             extension = "download"
         return extension
+
+    def get_deadline_string(deadline):
+        if deadline is None:
+            return "Ei palautuspäivää"
+        now = datetime.datetime.now(pytz.utc)
+        deadline_adjusted = deadline.astimezone(pytz.utc)
+        diff = deadline_adjusted - now
+        hours = diff.seconds // 3600
+        
+        minutes = (diff.seconds - 3600*hours)//60
+        seconds = (diff.seconds -3600*hours - 60*minutes)
+        if diff.days > 1:
+            first = str(diff.days)+" päivää ja "
+
+            if hours > 1:
+                second = str(hours) + " tuntia"
+            elif minutes > 1:
+                second = str(minutes)+" minuuttia "
+            elif seconds > 1:
+                second = str(seconds) +" sekuntia"
+        if hours > 1:
+            first = str(hours) + " tuntia ja "
+            if minutes > 1:
+                second = str(minutes)+" minuuttia "
+            elif seconds > 1:
+                second = str(seconds) +" sekuntia"
+        else:
+            first = str(minutes)+" minuuttia ja "
+            second = str(seconds) +" sekuntia"
+
+        if now > deadline_adjusted:
+            after = " sitten"
+        else:
+            after = " jäljellä"
+        return first + second+after
+
     def previous_url(current_url, n):
         try:
             for i in range(n):
@@ -37,7 +75,7 @@ def utility_processor():
             return url_for("index")
 
 
-    return dict(get_file_extension=get_file_extension, previous_url=previous_url)
+    return dict(get_file_extension=get_file_extension, previous_url=previous_url, get_deadline_string=get_deadline_string)
 
 
 @app.route("/")
@@ -147,7 +185,8 @@ def get_file(file_id):
 @login_required
 def view_assig(course_id, assignment_id): #TODO rights validations (remember reveal)
     assignment = db.select_assignment(assignment_id)
-    db.set_submits(assignment)
+    db.set_submits(assignment, current_user.get_id())
+    assignment.set_timezones("Europe/Helsinki")
     return render_template("/student/assignment/view.html", assignment=assignment, done_string = str(len(assignment.submits))+"/"+str(len(assignment.tasks)))
 
 
@@ -157,15 +196,21 @@ def view_task(course_id, assignment_id, task_id):
     if request.method == "GET":
         assignment = db.select_assignment(assignment_id, task_id=task_id)
         
+        if assignment.deadline is None:
+            deadline_not_passed = True
+        else:
+            deadline_not_passed = assignment.deadline.astimezone(pytz.utc) > datetime.datetime.now(pytz.utc)
+        
         try:
             task = assignment.tasks[0] #all assigs have at least 1 task, so will only happen for manual urls
         except:
             return redirect(url_for("index"))
-        db.set_submits(assignment, task_id=task.id)
-        print(assignment.files)
-        task.files = db.select_file_details(task_id=task.id)
         
-        return render_template("/student/assignment/view_task.html" ,course_id=course_id, task = task, assignment=assignment)
+        db.set_submits(assignment,current_user.get_id(), task_id=task.id)
+        
+        task.files = db.select_file_details(task_id=task.id)
+        assignment.set_timezones("Europe/Helsinki")
+        return render_template("/student/assignment/view_task.html" ,course_id=course_id, task = task, assignment=assignment, deadline_not_passed=deadline_not_passed)
     else:
 
         files = request.files.getlist("files")

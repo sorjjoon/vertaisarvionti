@@ -1,0 +1,36 @@
+{% extends "layout.html" %} 
+
+{% block body %}
+
+<table class="table">
+    <thead>
+        <tr>
+
+            <th scope="col">Nimi</th>
+            
+            <th scope="col">Päättymispäivä </th>
+            
+            <th scope="col">Seuraava palautus </th>
+
+            <th scope="col">Pisteeni </th>
+        </tr>
+    </thead>
+    <tbody>
+      {%for c in courses%}
+        <tr>
+            <td> <a href={{url_for('view_course', course_id=c.id) }}>{{c.name}}</a> </td>
+            
+            <td>{{c.end_date}}</td>
+            {% if c.min %}
+            <td> {{c.min}} </td>
+            {% else%}
+            <td> Ei tulevia palautuksia </td>
+            {% endif %}
+            <td> jotain </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% endblock %}

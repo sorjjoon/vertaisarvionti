@@ -3,7 +3,7 @@ from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 from datetime import datetime
 from sqlalchemy import func
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 from application.domain.assignment import File
 
 def check_user_delete_rights(self, user_id, file_id, is_teacher=False):
@@ -100,8 +100,8 @@ def check_user_view_rights(self, user_id, file_id, is_teacher=False):
 
 
 
-def update_file(self, user_id,files, submit_id=None, assignment_id=None, task_id=None, files_to_delete = []): #TODO validate user has rights
-    if submit_id is None and assignment_id is None and task_id is None:
+def update_file(self, user_id,files, submit_id=None, assignment_id=None, task_id=None, answer_id=None, files_to_delete = []): 
+    if submit_id is None and assignment_id is None and task_id is None and answer_id is None:
         return
 
     sql = self.file.delete().where(self.file.c.owner_id == user_id)
@@ -111,7 +111,8 @@ def update_file(self, user_id,files, submit_id=None, assignment_id=None, task_id
         sql = sql.where(self.file.c.assignment_id == assignment_id)
     if task_id is not None:
         sql = sql.where(self.file.c.task_id == task_id)
-        
+    if answer_id is not None:
+        sql = sql.where(self.file.c.answer_id == answer_id)
     if files_to_delete:
         sql = sql.where(self.file.c.id.in_(files_to_delete))
 
@@ -122,7 +123,7 @@ def update_file(self, user_id,files, submit_id=None, assignment_id=None, task_id
         sql = self.file.insert().values(insert_dics)
         conn.execute(sql)    
 
-def select_file_details(self, assignment_id=None, task_id=None, file_id = None):
+def select_file_details(self, assignment_id=None, task_id=None, file_id = None, answer_id=None):
     if assignment_id is None and task_id is None and file_id is None: #without this would return everything in case both None
         return None
 
@@ -135,17 +136,15 @@ def select_file_details(self, assignment_id=None, task_id=None, file_id = None):
     
     if file_id is not None:
         sql = sql.where(self.file.c.id == file_id)
-    print(sql)
+    if answer_id:
+        sql = sql.where(self.file.c.answer_id == answer_id)
+
     with self.engine.connect() as conn:
         rs = conn.execute(sql)
         results = []
         for row in rs:
-            print("row id")
-            print(row[self.file.c.id])
             results.append(File(row[self.file.c.id], row[self.file.c.name], row[self.file.c.upload_date]))
         rs.close()
-    print("results length")
-    print(len(results))
     return results
 
 def delete_file(self, file_id, owner_id):

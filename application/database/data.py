@@ -97,6 +97,7 @@ class data:
         Column("id", Integer, primary_key=True),
         Column("reveal", DateTime,
                                    server_default=func.now(), nullable=False),
+        Column("description", String(500)),                           
         Column("task_id", Integer, ForeignKey(
                                         "task.id", onupdate="CASCADE"), index=True,nullable=False),
                                         Column("reveal", DateTime,nullable=False))
@@ -163,3 +164,4 @@ class data:
     from ._file_service import select_file_details, get_file, update_file
     from ._submit_service import update_submit
     from ._teacher_stats import count_students
+    from ._task_service import set_task_answer, update_answer

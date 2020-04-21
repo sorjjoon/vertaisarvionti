@@ -1,9 +1,0 @@
-{% extends "layout.html" %} 
-{% block body %}
-
-<a href={{url_for('view_course_students', course_id=id) }}>Ilmoittautuneet</a>
-<p></p>
-<a href={{url_for('new_assignment', course_id=id) }}>Uusi Palautus</a>
-<p></p>
-<a href={{url_for('view_course', course_id=id, s=1) }}>Opiskelijan näkymä</a>
-{% endblock %}
