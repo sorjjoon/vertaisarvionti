@@ -35,7 +35,10 @@ def utility_processor():
             return "Ei palautuspäivää"
         now = datetime.datetime.now(pytz.utc)
         deadline_adjusted = deadline.astimezone(pytz.utc)
-        diff = deadline_adjusted - now
+        if deadline_adjusted > now:
+            diff = deadline_adjusted - now
+        else:
+            diff = now - deadline_adjusted
         hours = diff.seconds // 3600
         
         minutes = (diff.seconds - 3600*hours)//60
@@ -67,7 +70,7 @@ def utility_processor():
 
     def previous_url(current_url, n):
         try:
-            for i in range(n):
+            for _ in range(n):
                 current_url = current_url[:current_url.rindex("/")]
             
             return current_url
@@ -84,7 +87,7 @@ def index():
         return redirect(url_for("courses"))
     else:
         return redirect(url_for("login_auth"))
-    #return render_template("index.html")
+    
 
 @app.route("/enlist", methods = ["GET", "POST"])
 @login_required
@@ -95,14 +98,16 @@ def enlist_course():
     if request.method == "GET":
         return render_template("/student/enlist.html")
     try:
-        
+        print("attempting to sign up student "+current_user.get_id()+"for course code "+request.form.get("code"))
         db.enlist_student(request.form.get("code"), current_user.get_id())
+        print("successful enlist")
         return redirect(url_for("courses"))
-    except ValueError as e:
-        print(e)
+    except ValueError:
+        print("invalid code")
+        
         return render_template("/student/enlist.html", error="Koodillasi ei löytynyt kurssia")
-    except IntegrityError as e:
-        print(e)
+    except IntegrityError:
+        print("duplicate signup")
         return render_template("/student/enlist.html", error="Olet jo ilmoittautunut tälle kurssille")
 
 
@@ -128,6 +133,7 @@ def courses():
 @app.route("/view/<course_id>")
 @login_required
 def view_course(course_id):
+    print("user "+str(current_user.get_id())+" accessing index for course "+str(course_id))
     if current_user.role =="USER":
         course = db.select_course_details(course_id, current_user.get_id())
         db.set_assignments(course)
@@ -144,7 +150,7 @@ def view_course(course_id):
         teacher = None
         if course is not None:
             teacher = db.get_user_by_id(course.teacher_id)
-            print(teacher)
+            
         return render_template("/student/course.html", course = course, teacher=teacher)
     else:
         course = db.select_course_details(course_id, current_user.get_id(), is_student=False)
@@ -159,7 +165,7 @@ def view_course(course_id):
 
 
 
-@app.route("/view/students/<course_id>")
+@app.route("/view/<course_id>/students")
 @login_required
 def view_course_students(course_id):
     students = db.select_students(course_id, current_user.get_id())

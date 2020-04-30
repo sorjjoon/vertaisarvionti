@@ -13,9 +13,17 @@ class Course():
         self.min = min
         self.student_count = student_count
 
+    def __eq__(self, other):
+        if isinstance(other, Course):
+            if self.name == other.name:
+                if self.description == other.description:
+                    if self.id == other.id:
+                        return True
 
+
+        return False
     def __str__(self):
-        return str(id)
+        return "id: "+str(self.id)+"name: "+self.name+ "description "+self.description+ "end date"+str(self.end_date)+"code, "+self.code+", teacher id: "+str(self.teacher_id)
 
     def divide_assignment(self):
         self.past = []

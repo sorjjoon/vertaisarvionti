@@ -8,10 +8,34 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, select, update)
 from sqlalchemy.sql import func
-
+from sqlalchemy import CheckConstraint
 
 class data:
     def __init__(self, used_engine: engine, create= True):
+        """Initiliaze data class. If engine is not provided tables are not set (call set_tables later)
+
+        Arguments:
+            used_engine {engine} -- [sqlalchemy engine]
+
+        Keyword Arguments:
+            create {bool} -- [If given will also insure tables exists, as well attempt to insert user roles] (default: {True})
+        """
+        
+        if used_engine is not None:
+            self.set_tables(used_engine, create=create)
+        else:
+            self.engine=None
+
+    def set_tables(self, used_engine: engine, create= True):
+        """set object tables
+
+        Arguments:
+            used_engine {engine} -- [sqlalchemy engine]
+
+        Keyword Arguments:
+            create {bool} -- [If given will also insure tables exists, as well attempt to insert user roles] (default: {True}] (default: {True})
+        """
+        print("defining tables")
         if not os.environ.get("HEROKU"):
             # sqlite doesn't enforce foreign keys by default, turning them on to enforce cascade
             def _fk_pragma_on_connect(dbapi_con, con_record):
@@ -20,7 +44,7 @@ class data:
             from sqlalchemy import event
             event.listen(used_engine, 'connect', _fk_pragma_on_connect)
 
-        metadata = MetaData(used_engine)
+        metadata = MetaData(bind=used_engine)
         self.account = Table('account', metadata,
                              Column("id", Integer, primary_key=True),
                              Column("role_id", Integer,  ForeignKey(
@@ -44,7 +68,7 @@ class data:
         self.course = Table("course", metadata,
                             Column("id", Integer, primary_key=True),
                             Column("teacher_id", Integer, ForeignKey(
-                                "account.id", onupdate="CASCADE"), index=True),
+                                "account.id", onupdate="CASCADE"), index=True, nullable=False),
                             Column("name", String(144), nullable=False),
                             Column("description", String(144)),
                             Column("code", String(8), nullable=False),
@@ -90,7 +114,11 @@ class data:
         Column("task_id", Integer, ForeignKey(
                                         "task.id", onupdate="CASCADE"), index=True),
         Column("assignment_id", Integer, ForeignKey(
-                                        "assignment.id", onupdate="CASCADE"), index=True))
+                                        "assignment.id", onupdate="CASCADE"), index=True),
+        CheckConstraint('answer_id IS NOT NULL OR submit_id IS NOT NULL OR task_id IS NOT NULL OR assignment_id IS NOT NULL', name='null answer, assignment or task')
+                                        
+                                        
+                                        )
         
 
         self.answer = Table("answer", metadata,
@@ -127,6 +155,7 @@ class data:
 
         self.engine=used_engine
         if create:
+            print("attempting create all")
             metadata.create_all()  # checks if table exsists first
 
         # insert 1 admin user, and roles "USER" and "ADMIN to the database (if they don't exsist)"
@@ -156,6 +185,17 @@ class data:
 
                 except:
                     pass
+
+
+    @staticmethod
+    def drop_all(engine, tables=None):
+        print("dropping tables")
+        meta = MetaData(bind=engine)
+        meta.reflect(only=tables)
+        if tables:
+            raise NotImplementedError("TODO")
+        meta.drop_all()
+
 
     from ._user_service import delete_user, get_user_by_id, check_user, update_username
     from ._user_auth import get_user, hash_password, insert_user, update_password, get_role_id

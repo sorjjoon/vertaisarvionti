@@ -4,7 +4,6 @@ from application import db
 from flask import current_app as app
 from flask_login import login_user, logout_user, login_required, current_user
 from application.auth import account
-# forms
 
 
 @app.route("/auth/delete", methods=["POST", "GET"])

@@ -6,12 +6,26 @@ from application.auth.account import account
 #see documentation for queries 
 
 
-def delete_user(self, user_id):
+def delete_user(self, user_id:int) -> None:
+    """deletes user with the given id. Check db if delete cascades or not (currently doesnt)
+
+    Arguments:
+        user_id {[int]} -- [id]
+    """
     sql = self.account.delete().where(self.account.c.id == user_id)
     with self.engine.connect() as conn:
-        conn.execute(sql) #delete cascades
+        conn.execute(sql) 
 
-def check_user(self, username):
+def check_user(self, username:str) -> bool:
+    """check if given username is free
+
+    Arguments:
+        username {str} -- [username]
+
+    Returns:
+        [bool] -- [true if username is free]
+    """
+
     sql = select([self.account.c.id]).where(self.account.c.username==username)
     with self.engine.connect() as conn:
         result_set = conn.execute(sql)
@@ -22,12 +36,27 @@ def check_user(self, username):
         else:
             return False
 
-def update_username(self, new_username, user_id):
+def update_username(self, new_username:str, user_id:int) -> None:
+    """Update the username for given id to match param
+
+    Arguments:
+        new_username {str} -- [new username]
+        user_id {int} -- [id]
+    """
     sql = self.account.update().values(username=new_username).where(self.account.c.id == user_id)
     with self.engine.connect() as conn:
         conn.execute(sql)
 
-def get_user_by_id(self, user_id: int):
+def get_user_by_id(self, user_id: int) -> account:
+    """Get all details of user matching given id
+
+    Arguments:
+        user_id {int} -- [id]
+
+    Returns:
+        account -- [returns mtaching account object, None in case user not found]
+    """
+    
     join_clause = self.account.join(self.role)
     sql = select([self.role.c.name, self.account.c.username, self.account.c.first_name, self.account.c.last_name]).select_from(join_clause).where(self.account.c.id==user_id)
     with self.engine.connect() as conn:

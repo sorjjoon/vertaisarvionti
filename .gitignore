@@ -9,6 +9,8 @@ data.db
 !requirements.txt
 procfile
 *.pyc
+*.orig
+.pytest_cache
 *.json
 # all mains used for testing are called main.py (actual app started with run.py)
 main.py

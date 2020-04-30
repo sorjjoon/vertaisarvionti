@@ -7,24 +7,8 @@ import pytest
 from application import create_app
 from flask import url_for
 import io
+from tests import test_client
 
-@pytest.fixture(scope="module")
-def test_client():
-    
-    
-    app = create_app("test")
- 
-    # Flask provides a way to test your application by exposing the Werkzeug test Client
-    # and handling the context locals for you.
-    testing_client = app.test_client()
- 
-    # Establish an application context before running the tests.
-    ctx = app.app_context()
-    ctx.push()
- 
-    yield testing_client  # this is where the testing happens!
-    
-    ctx.pop()
 
 
 
@@ -46,8 +30,8 @@ def test_home_page(test_client):
 @pytest.mark.run(order=2)
 def test_login_logout(test_client): #TODO register
     login_response = test_client.post("auth/login", data=dict(
-        username="12345678",
-        password="12345678"
+        username="öylättiöäöl",
+        password="öylättiöäöl"
     ), follow_redirects=True)
     assert login_response.status_code == 401
     res = test_client.post("auth/register", data=dict(
@@ -95,7 +79,8 @@ def test_create_course(test_client):
     assert b"kurssi" in res.data
     assert b"Oulun testi kurssi" in res.data
     assert b"2022" in res.data and b"05" in res.data and b"07" in res.data
-    logout_response = test_client.get("/auth/logout", follow_redirects=True)
+    test_client.get("/auth/logout", follow_redirects=True)
+
 
 @pytest.mark.run(order=4)
 def test_task_add(test_client):
@@ -122,5 +107,4 @@ def test_task_add(test_client):
     res = test_client.get('/view/1?s=1')
     assert res.status_code == 200
     assert b"Eka testi" in res.data
-    logout_response = test_client.get("/auth/logout", follow_redirects=True)
-    
+    test_client.get("/auth/logout", follow_redirects=True)

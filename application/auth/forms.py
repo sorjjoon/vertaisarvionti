@@ -8,7 +8,6 @@ from wtforms import StringField, PasswordField, validators, ValidationError, Boo
 from flask_login import login_user, logout_user, login_required, current_user
 from application.auth import account
 
-
 def username_free(form, field):
     if not db.check_user(field.data):
         raise ValidationError('Käyttänimi on varattu')

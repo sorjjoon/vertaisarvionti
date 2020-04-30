@@ -36,30 +36,41 @@ def assignment_overview(course_id, assignment_id):
     assign.set_timezones("Europe/Helsinki")
     return render_template("/teacher/overview/assignment.html", assignment = assign) 
 
-@app.route("/view/<course_id>/overview/<assignment_id>/task/<task_id>/set", methods=["GET", "POST"])
-@login_required
-def task_overview(course_id, assignment_id, task_id):
-    if current_user.role == "USER" or request.method =="GET":
-        return redirect(url_for("index"))  
 
-    
 
 class AnswerForm(FlaskForm):
     
-    description = TextAreaField(label = "Lisätietoja", validators=[validators.data_required()])
+    description = TextAreaField(label = "Lisätietoja")
     reveal = DateTimeField(
         "Näkyy opiskelijoille", format="%Y-%d-%mT%H",
         default=datetime.datetime.today, validators=[validators.data_required()]
     )
     files = MultipleFileField(label="Aineistot, max 50 Mb")
 
-@app.route("/view/<course_id>/overview/<assignment_id>/task/<task_id>")
+@app.route("/view/<course_id>/overview/<assignment_id>/task/<task_id>",  methods=["GET", "POST"])
 @login_required
-def set_answer(course_id, assignment_id, task_id):
+def task_overview(course_id, assignment_id, task_id):
     if current_user.role == "USER":
-        return redirect(url_for("index"))   
+        print("student attempted access to task overview id: "+str(current_user.get_id()))
+        return redirect(url_for("index"))  
+    form = None
+    if request.method == "POST":
+        print("attempting answer update")
+        form = AnswerForm(request.form)
+        if not form.validate():
+            print("form validation failed")
+            pass
+        else:
+            print("updating answer for "+str(task_id))
+            db.update_answer(current_user.get_id(),   task_id, request.files.getlist("files"), form.description.data, pytz.timezone("Europe/Helsinki").localize(form.reveal.data))
+            print("update success")
+            form = None
+            
+
+    print("viewing task overview")
     assignment = db.select_assignment(assignment_id, task_id=task_id)
-    
+    if not assignment:
+        return redirect(url_for("index"))
     if assignment.deadline is None:
         deadline_not_passed = True
     else:
@@ -73,6 +84,9 @@ def set_answer(course_id, assignment_id, task_id):
     db.set_submits(assignment,current_user.get_id(), task_id=task.id)
     
     task.files = db.select_file_details(task_id=task.id)
+    db.set_task_answer(task, for_student=False)
     assignment.set_timezones("Europe/Helsinki")
-    #student_tuples = db.get_student_submits()
-    return render_template("/teacher/overview/task.html",course_id=course_id, task = task, assignment=assignment, deadline_not_passed=deadline_not_passed, form = AnswerForm()) 
+    
+    if form is None:
+        form = AnswerForm()
+    return render_template("/teacher/overview/task.html",course_id=course_id, task = task, assignment=assignment, deadline_not_passed=deadline_not_passed, form = form) 

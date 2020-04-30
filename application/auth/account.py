@@ -25,8 +25,6 @@ class account:
     def is_authenticated(self):
         return True
 
-    def __str__(self):
-        return str(self.id)+" "+self.name
 
     def get_role(self):
         return self.role
