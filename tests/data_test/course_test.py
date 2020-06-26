@@ -1,23 +1,39 @@
 
 
+import datetime
+import io
 import os
+import random
 import tempfile
+import unittest
+from .user_test import insert_users
+import pytest
+import pytz
+from flask import url_for
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-import pytest
-from flask import url_for
-import io
-import datetime
-import unittest
-import random
-from db_fixture import db_test_client, get_random_unicode, random_datetime
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
-                            join, select, update, outerjoin)
-from user_test import test_user_insert
-from application.domain.course import Course
+                            join, outerjoin, select, update)
+
 from application.auth.account import account
+from application.domain.course import Course
+from .db_fixture import db_test_client, get_random_unicode, random_datetime
+
+
+from .db_fixture import get_random_unicode, random_datetime
+
+
+def insert_courses(db, teacher_id, n):
+    for _ in range(n):
+        name = get_random_unicode(45)
+        desc = get_random_unicode(23)
+        c = Course(name, desc, random_datetime())
+        id, code = db.insert_course(c, teacher_id)
+
+
 def test_course_insert(db_test_client):
     from application import db
+    from .user_test import test_user_insert
     test_user_insert(db_test_client)
     student = db.get_user_by_id(1)
     teacher = db.get_user_by_id(2)
@@ -75,6 +91,7 @@ def test_large_course_insert(db_test_client):
 
 def test_course_signup(db_test_client):
     from application import db
+    
     id, code = test_course_insert(db_test_client)
 
     student = db.get_user_by_id(1)
@@ -93,14 +110,30 @@ def test_course_signup(db_test_client):
         assert len(course) ==1
         assert course[0].name == "'öäasöä1ÅÄÖÅÄÅÖÄÅÖö23å231äl23ölasäösä"
         assert course[0].description == "äöääöäpläplpä21äl.masalöas"
-@pytest.mark.large
+
+def test_invalid_signup(db_test_client):
+    from application import db
+    
+    description = get_random_unicode(100)
+    reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
+    teacher = insert_users(db, 1, roles=["TEACHER"])[0]
+    student = insert_users(db, 1, roles=["USER"])[0]
+    id, code = db.insert_course(Course("something", "something",reveal), teacher.id)
+    db.enlist_student(code, student.id)
+    with pytest.raises(IntegrityError):
+        db.enlist_student(code, student.id)
+    
+    with pytest.raises(ValueError):
+        db.enlist_student("something", student.id)
+
+
+
 def test_large_course_signup(db_test_client):
     from application import db
-    from user_test import test_weird_chars_large_set
+    from .user_test import test_weird_chars_large_set
     ids = test_weird_chars_large_set(db_test_client, random_roles=False)
-    from db_fixture import get_random_unicode
-    import random
-    import datetime
+    
+    
     now = datetime.datetime.now()
     courses = []
     teacher_courses = {}
@@ -161,13 +194,4 @@ def test_large_course_signup(db_test_client):
                 assert c in real, str(c)+"not found in"+", ".join(str(c) for c in real)
             for c in real:
                 assert c in courses, str(c)+"not found in"+", ".join(str(c) for c in real)
-
-
-
-
-
-
-
-
-
 

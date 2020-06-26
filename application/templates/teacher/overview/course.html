@@ -73,7 +73,7 @@
                 <tr>
                     <td>
                         <a
-                            href={{url_for('view_assig', course_id=course.id, assignment_id=assig.id) }}>{{assig.name}}</a>
+                            href={{url_for('assignment_overview', course_id=course.id, assignment_id=assig.id) }}>{{assig.name}}</a>
                     </td>
                 </tr>
                 <tr>
@@ -98,7 +98,7 @@
                 
                 <tr>
                     <td>
-                        <p>Oikeat vastaukset asetettu: {{assig.answers|length}}/{{assig.tasks|length}}</p>
+                        <p>Oikeat vastaukset asetettu: {{assig.answer_length()}}/{{assig.tasks|length}}</p>
                     </td>
                 </tr>
 

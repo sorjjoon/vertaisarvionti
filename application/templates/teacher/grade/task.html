@@ -1,0 +1,67 @@
+{% extends "layout.html" %} 
+{% block body %}
+<a href={{next_url}}>Seuraava</a>
+
+{% include "task_template.html" %}
+
+<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+    <h2 class="mt-3 mb-3">
+      Malliratkaisu
+    </h2>
+    {% if not task.answer %}
+  <h5 style="color:red;">
+  Malliratkaisua ei ole asetettu
+  </h5>
+    {% else %}
+      <h5 style="color:green;" class="mb-3">
+        Malliratkaisu on asetettu. 
+      </h5>
+      <p>
+        Näkyvissä opiskelijoille: {{task.answer.reveal.strftime("%d.%m.%y, %H:%M")}}
+      </p>
+      <p><small>{{get_deadline_string(task.answer.reveal)}}</small></p>
+      <p>
+        {{task.answer.description}}
+  
+      </p>
+      <p>Liitteet: {% for file in task.answer.files %}
+        <a href={{url_for('get_file', file_id=file.id) }}><span
+            class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
+        {{ ", " if not loop.last }}
+        {% endfor %}</p>
+    {% endif %}
+  </div>
+
+  <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+    
+    <table class="table">
+        <tbody>
+            
+            <tr>
+              <th>{{this_student}}
+              </th>
+              <td><p>{% if assignment.submits %} Palautettu {{assignment.submits[0].date.strftime("%d.%m.%y, %H:%M")}}, (<small>{{get_deadline_string(assignment.deadline, now=assignment.submits[0].date)}}</small>) {% else %}Ei palautettu {% endif %}
+                 </p></td>
+            </tr>
+            <tr>
+              <th>Tiedostot</th>
+              {% if assignment.submits %}
+              <p>{% for file in assignment.submits[0].files %}
+                <td><a href={{url_for('get_file', file_id=file.id) }}><span class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a> {{ ", " if not loop.last }}</td>
+                {% endfor %}</p>
+                    {% else %}
+                    <td>-</td>
+
+                    {% endif %}
+                </td>
+            </tr>
+          <tr>
+              <th>Vertaisarvionti</th>
+                  <td>emt</td>
+            </tr>
+        </tbody>
+    </table>
+  </div>
+
+
+{% endblock %}

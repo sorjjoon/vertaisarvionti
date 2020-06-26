@@ -1,0 +1,35 @@
+
+<table class="mt-2">
+    <tr>
+        <td>
+            <h5>Malliratkaisu</h5>
+        </td>
+
+    </tr>
+
+    <tr>
+        <td>
+          <p> {{answer.description}}</p>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>
+                Liitteet:
+            </p>
+        </td>
+    </tr>
+    {% for file in answer.files %}
+    <tr>
+        <td>
+           <p class="smaller_font"> <a href={{url_for('get_file', file_id=file.id) }}><span
+                    class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span>
+                {{file.name}}</a>
+            </p>
+            </td>
+        
+    </tr>
+    {% endfor %}
+
+</table>

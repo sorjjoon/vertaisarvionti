@@ -1,9 +1,12 @@
-from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
-                            join, select, update, outerjoin )
 import datetime
-from werkzeug.utils import secure_filename
-from application.domain.assignment import Assignment, Task, Submit, File
+
 from sqlalchemy import func
+from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
+                            join, outerjoin, select, update)
+from werkzeug.utils import secure_filename
+
+from application.domain.assignment import Assignment, File, Submit, Task
+
 
 def count_students(self, teacher_id:int, course_id:int=None) -> tuple:
     """placeholder for student counts, currenylu returns tuples
@@ -17,6 +20,7 @@ def count_students(self, teacher_id:int, course_id:int=None) -> tuple:
     Returns:
         [type] -- [description]
     """
+    self.logger.info("Fetching student counts for course: %s for user %s", (course_id or "all"), teacher_id)
     if course_id:
         sql = select([self.course_student.c.course_id, func.count( self.course_student.c.student_id)]).where(self.course_student.c.course_id == course_id)
     else:    
@@ -29,4 +33,3 @@ def count_students(self, teacher_id:int, course_id:int=None) -> tuple:
         
 
         return res
-

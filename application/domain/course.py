@@ -33,6 +33,7 @@ class Course():
             if a.deadline is None:
                 self.future.append(a)
                 continue
+            
             deadline_adjusted = a.deadline.astimezone(pytz.utc)
             if deadline_adjusted > now:
                 self.future.append(a)

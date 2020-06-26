@@ -1,14 +1,6 @@
 {% extends "layout.html" %} 
 {% block body %}
 <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " >
-    <h1> {{assignment.name}} </h1>
-    
-    {% for task in assignment.tasks %}
-    <p>--</p>
-    <p> <a href={{"./" ~ assignment.id ~ "/task/" ~ task.id }}>Tehtävä {{ loop.index }}</a>   {% if task.done %} <img src="{{ url_for('static', filename='images/checkmark-16.png') }}"> </p> {% endif %}
-        {% endfor %}
+    {% include "assignment_template.html" %}
 </div>
-<form method="GET" action={{previous_url(request.url,2)}}>
-    <input type="submit" value="Takaisin">
-</form>
 {% endblock %}

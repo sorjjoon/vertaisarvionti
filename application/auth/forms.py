@@ -80,7 +80,7 @@ def register():
 @app.route("/auth/login", methods=["GET", "POST"])
 def login_auth():
     if request.method == "GET":
-        print(db.engine)
+        app.logger.info(db.engine)
         
         return render_template("auth/login.html", form=LoginForm(), next = request.args.get("next"))
 
@@ -91,7 +91,7 @@ def login_auth():
         return render_template("auth/login.html", form=form, error="No such username or password"), 401
 
     login_user(user)
-    print("User " + form.username.data + " validated")
+    app.logger.info("User " + form.username.data + " validated")
     if request.form.get("next"):
         try:
             return redirect(request.form.get("next"))

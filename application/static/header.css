@@ -2,6 +2,20 @@ body { padding: 0; }
 .page-header,
 .page-header h1 {margin-top:0;} 
 
+.larger_font {
+   font-size: 19px;
+}
+
+.smaller_font {
+   font-size: 12px;
+}
+
+.slightly_smaller_font {
+   font-size: 13px;
+}
+.red_color{
+   color: red;
+}
 .container-fluid {
     padding-right:0;
     padding-left:0;
@@ -10,7 +24,8 @@ body { padding: 0; }
  }
 
 p {
-   margin-bottom: 0;
+   margin-bottom: 1mm;
+   margin-bottom: 1mm;
 } 
 #assig_table {
    margin-top: 1rem;
@@ -31,18 +46,10 @@ p {
    margin-left: 0;
    margin-right: 0;
 }
+.add_border {
+   border:1px solid #d9d9d9;
+}
 
- .sidebar {
-    position: fixed;
-    border-right:2px solid #d9d9d9;
-    min-height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    border-right: 1px ;
-    min-width: 170px;
-    max-width: 170px; 
-    top: 58px;
-    bottom: 0;
-    
-
+ span {
+   display: inline-block;
  }

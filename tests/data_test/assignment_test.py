@@ -1,26 +1,30 @@
 
-import unittest
+import datetime
+import io
 import os
+import random
 import tempfile
+import unittest
+
+import pytest
+import pytz
+from flask import url_for
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-import pytest
-from flask import url_for
-import io
-import datetime
-from db_fixture import db_test_client
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
-                            join, select, update, outerjoin)
-from user_test import test_user_insert
-from course_test import test_course_insert
+                            join, outerjoin, select, update)
+
+from application.domain.assignment import Assignment, Task
 from application.domain.course import Course
-from application.domain.assignment import Task, Assignment
-import pytz
-from db_fixture import get_random_unicode, random_datetime, insert_random_courses, format_error
-import random
+
+
+from .db_fixture import (db_test_client, format_error, get_random_unicode,
+                         insert_random_courses, random_datetime)
+
 
 def test_simple_assignment(db_test_client, a_files = [], t_files=[]):
     from application import db
+    from .course_test import test_course_insert
     id, code = test_course_insert(db_test_client)
     student = db.get_user("oppilas", "oppilas")
     teacher = db.get_user("opettaja", "opettaja")
@@ -86,6 +90,7 @@ def test_simple_assignment(db_test_client, a_files = [], t_files=[]):
     
 def test_course_set_assignment_visibility(db_test_client, a_files = [], t_files=[]):
     from application import db
+    from .course_test import test_course_insert
     id, _ = test_course_insert(db_test_client)
     teacher = db.get_user("opettaja", "opettaja")
 
@@ -256,7 +261,6 @@ def random_assignment(course_id, teacher_id, hidden=False):
     return name, deadline, reveal
 
         
-from application.domain.assignment import Task
 def random_task(a_id, files):
     t = Task(0, random.randint(5,8), get_random_unicode(random.randint(10,20)), assignment_id=a_id, files=files)
     return t

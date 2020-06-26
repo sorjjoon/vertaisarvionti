@@ -10,7 +10,7 @@ from application import db
 # method requires admin privilages
 def list_user():
     if current_user.role != "ADMIN":
-        print("Unauthorized access by "+current_user.username)
+        app.logger.info("Unauthorized access by "+current_user.username)
         return redirect(url_for("index"))
     else:
         users = db.list_users()

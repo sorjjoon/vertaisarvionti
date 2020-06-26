@@ -1,14 +1,16 @@
-import os
-import tempfile
-import random
-import pytest
-from application.domain.course import Course
-from application.domain.assignment import Assignment, Task
-from application import create_app
-from flask import url_for
-import io
 import datetime
+import io
+import os
+import random
+import tempfile
+
+import pytest
 import pytz
+from flask import url_for
+
+from application import create_app
+from application.domain.assignment import Assignment, Task
+from application.domain.course import Course
 
 
 def format_error(left, right):

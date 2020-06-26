@@ -3,7 +3,7 @@
 /venv2
 __pycache__
 data.db
-
+.coverage
 .vscode
 !/documentation
 !requirements.txt
@@ -12,5 +12,8 @@ procfile
 *.orig
 .pytest_cache
 *.json
+/cov
+*.log
+*.db
 # all mains used for testing are called main.py (actual app started with run.py)
 main.py

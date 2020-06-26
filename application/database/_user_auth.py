@@ -1,10 +1,10 @@
-from sqlalchemy.sql import select, insert, delete, update, join
-from sqlalchemy.exc import IntegrityError
-
-from application.auth.account import account
-
 from hashlib import scrypt
 from secrets import token_hex
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import delete, insert, join, select, update
+
+from application.auth.account import account
 
 # see documentation for queries / param explanations
 
@@ -30,10 +30,10 @@ def get_user(self, username: str, password: str) -> account:
         row = result_set.fetchone()
         result_set.close()
         if row is not None:
-            print("Login for "+username+" success")
+            self.logger.info("Login for "+username+" success")
             return account(row[self.account.c.id], row[self.account.c.username], row[self.role.c.name], row[self.account.c.first_name], row[self.account.c.last_name])
         else:
-            print("Login for "+username+" failed")
+            self.logger.info("Login for "+username+" failed")
             return None
 
 
@@ -64,7 +64,7 @@ def insert_user(self, username: str, password: str, first_name:str, last_name:st
     Keyword Arguments:
         role {str} -- [user role name] (default: {"USER"})
     """
-    print("Adding new user "+username)
+    self.logger.info("Adding new user "+username)
     salt = generate_new_salt()
 
     hashed = hash_password_salt(password, salt)
@@ -74,6 +74,7 @@ def insert_user(self, username: str, password: str, first_name:str, last_name:st
     with self.engine.connect() as conn:
         try:
             conn.execute(sql)
+            self.logger.info("Insertion success!")
         except IntegrityError as r:
             raise r
 
@@ -118,7 +119,7 @@ def update_password(self, user_id: int, new_password: str):
         user_id {int} -- [id]
         new_password {str} -- [new_password]
     """
-    print("updating password for "+str(user_id))
+    self.logger.info("updating password for "+str(user_id))
     new_hash = self.hash_password(new_password, user_id=user_id)
     sql = update(self.account).values(
         password=new_hash).where(self.account.c.id == user_id)

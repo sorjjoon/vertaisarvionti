@@ -1,21 +1,40 @@
 
 
+import io
 import os
+import random
 import tempfile
-from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from random import choice
+
 import pytest
 from flask import url_for
-import io
-from db_fixture import db_test_client
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
-                            join, select, update, outerjoin)
-from application.auth.account import account
-def insert_users(db, n, roles=["USER", "TEACHER"]):
-    for _ in range(n):
-        acc = account()
+                            join, outerjoin, select, update)
 
-        db.insert_user
+from application.auth.account import account
+from .db_fixture import db_test_client, get_random_unicode
+
+
+def insert_users(db, n, roles=["USER", "TEACHER"]):
+    accs = []
+    for _ in range(n):
+        username = get_random_unicode(20)
+        password = get_random_unicode(25)
+        first = get_random_unicode(13)
+        last = get_random_unicode(15)
+        role = random.choice(roles)
+        db.insert_user(username, password, first, last, role = role)
+        a = db.get_user(username, password)
+        assert isinstance(a, account)
+        assert a.name == username
+        assert a.first_name == first
+        assert a.last_name == last
+        assert a.role == role
+        accs.append(a)
+    return accs
+
     
 def test_user_insert(db_test_client):
     from application import db
@@ -48,7 +67,6 @@ def test_user_insert(db_test_client):
     assert teacher.name == "opettaja"
     assert null == None
 
-from random import choice
 
 def test_weird_chars_large_set(db_test_client, random_roles = True):
     from application import db
@@ -63,7 +81,7 @@ def test_weird_chars_large_set(db_test_client, random_roles = True):
     null = db.get_user("something", "something")
     assert null == None
 
-    from db_fixture import get_random_unicode
+    
     usernames = []
     passwords = []
     firsts = []
@@ -111,4 +129,3 @@ def test_weird_chars_large_set(db_test_client, random_roles = True):
 
         ids.append(acc.id)
     return ids
-    

@@ -29,6 +29,8 @@ class account:
     def get_role(self):
         return self.role
 
-
     def __str__(self):
+        return self.last_name+", "+self.first_name
+        
+    def __repr__(self):
         return "id: "+str(self.id)+", username: "+self.name+ ", first name: "+self.first_name+", last name: "+self.last_name+", role:  "+self.role

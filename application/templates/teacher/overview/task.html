@@ -1,41 +1,22 @@
 {% extends "layout.html" %}
+
+
 {% block body %}
 <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
-
-  <p>Palautuspäivä: {% if assignment.deadline%}
-    {{assignment.deadline.strftime("%d.%m.%y, %H:%M")}}
-  </p>
-  <p><small>{{get_deadline_string(assignment.deadline)}}</small></p>
-  {% else %}
-  <p>Ei palautuspäivää</p>
-  {% endif %}
-
-  <p> Kaikkien tehtävien materiaalit: {% for file in assignment.files %}
-    <a href={{url_for('get_file', file_id=file.id) }}><span
-        class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
-    {{ ",  " if not loop.last }}
-    {% endfor %}</p>
-  <p> {{ task.description}}</p>
-  <p>Max pisteet: {{task.points}}</p>
-  <p>Liitteet: {% for file in task.files %}
-    <a href={{url_for('get_file', file_id=file.id) }}><span
-        class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
-    {{ ", " if not loop.last }}
-    {% endfor %}</p>
-
+  {% include "task_template.html" %}
 </div>
 <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
-  <h2 class="mt-3 mb-3">
+  <h3 class="mt-3 mb-3">
     Malliratkaisu
-  </h2>
+  </h3>
   {% if not task.answer %}
-<h5 style="color:red;">
+<h6 style="color:red;">
 Malliratkaisua ei ole asetettu
-</h5>
+</h6>
   {% else %}
-    <h5 style="color:green;" class="mb-3">
+    <h6 style="color:green;" class="mb-3">
       Malliratkaisu on asetettu. 
-    </h5>
+    </h6>
     <p>
       Näkyvissä opiskelijoille: {{task.answer.reveal.strftime("%d.%m.%y, %H:%M")}}
     </p>
@@ -44,11 +25,12 @@ Malliratkaisua ei ole asetettu
       {{task.answer.description}}
 
     </p>
-    <p>Liitteet: {% for file in task.answer.files %}
+    <p>Liitteet:</p> {% for file in task.answer.files %}
+    <p class="smaller_font">
       <a href={{url_for('get_file', file_id=file.id) }}><span
           class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
-      {{ ", " if not loop.last }}
-      {% endfor %}</p>
+        </p>
+      {% endfor %}
   {% endif %}
 </div>
 <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
@@ -72,7 +54,11 @@ Malliratkaisua ei ole asetettu
           </td>
 
           <td>
-            {{ form.reveal }}
+            {{ form.reveal(id="answer_reveal", disabled="disabled") }}
+          </td>
+          <td>
+            <input type="checkbox" id="reveal_after" name="reveal_after" value="1" onclick="toggleElement('reveal_after', 'answer_reveal', 'disabled', 'disabled')" checked>
+  <label for="reveal_after"> Heti palautuspäivän jälkeen</label>
           </td>
           <td>
             <ul>
@@ -119,11 +105,32 @@ Malliratkaisua ei ole asetettu
 
       <th scope="col">Nykyiset pisteet </th>
 
-      <th scope="col">Aseta pisteet </th>
+      <th scope="col">Opiskelija voi nähdä palautteensa </th>
     </tr>
   </thead>
+
+  {% for s in students %}
+
+  <tbody>   
+      <tr>
+          <td><a href="{{url_for('grade_student', course_id=course_id, student_id=s.id, assignment_id = assignment.id, task_id = task.id)}}">{{s.last_name}}, {{s.first_name}}</a></td>
+          {% if submits.get(s.id) %}
+          <td> {{submits.get(s.id)[0].date.strftime("%d.%m.%y, %H:%M") }} </td>
+          <td> {{submits.get(s.id)[0].points }} </td>
+          <td> TODO </td>
+            {% else %}
+            <td>Ei palautettu</td>
+          <td> 0 </td>
+          <td>-</td>
+          
+            {% endif %}
+          
+      </tr>
+      {% endfor %}
+  </tbody>
 
 
 
 </table>
+
 {% endblock %}

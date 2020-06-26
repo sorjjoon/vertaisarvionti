@@ -1,0 +1,39 @@
+{% block task %}
+{% if no_assignment is not defined %}
+<p class="mb-0">Palautuspäivä: {% if assignment.deadline%}
+    {{assignment.deadline.strftime("%d.%m.%y, %H:%M")}}
+  </p>
+  <p class="mb-4"><small>{{get_deadline_string(assignment.deadline)}}</small></p>
+  {% else %}
+  Ei palautuspäivää</p>
+  {% endif %}
+
+  <p> Kaikkien tehtävien materiaalit:</p>{% if assignment.files %} {% for file in assignment.files %}
+   <p> <a class="smaller_font" href={{url_for('get_file', file_id=file.id) }}><span
+        class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a></p>
+    
+    {% endfor %}
+    {% else %}
+    <p>Ei liitteitä</p>
+    {% endif %}
+
+
+{% endif %}
+<p class="mt-4"> Tehtävä {{task.number}} </p>
+<p class="mb-3">Max pisteet: {{task.points}}</p>
+  <p class="larger_font"> {{ task.description}}</p>
+  
+  <p class="mt-3">Liitteet: </p>{% if task.files %} {% for file in task.files %}
+   <p> <a class="smaller_font"  href={{url_for('get_file', file_id=file.id) }}><span
+        class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a></p>
+    
+    {% endfor %}
+    {% else %}
+    <p>Ei liitteitä</p>
+    {% endif %}
+
+
+
+
+
+{% endblock %}

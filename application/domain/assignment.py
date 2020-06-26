@@ -3,10 +3,14 @@ import pytz
 from dataclasses import dataclass
 
 class Submit():
-    def __init__(self, id, date, task_id, files, time_zone = "UTC"):
-        self.id = id
-        self.task_id = task_id
-        self.files = files
+    def __init__(self, id:int=None, points:int=None, date:datetime.datetime=None, task_id:int=None, files=None, description:str=None, time_zone = "UTC"):
+        self.id = int(id)
+        self.task_id = int(task_id)
+        if files:
+            self.files = files
+        else:
+            self.files = []
+        self.description = description
         self.date = None
         if date is not None:
             self.date = pytz.timezone(time_zone).localize(date)
@@ -24,11 +28,40 @@ class Submit():
         if self.date:
             self.date = self.date.astimezone(pytz.timezone(time_zone))
 
+    def __repr__(self):
+        return str(self)
+    
+    def __str__(self):
+        return "id: "+str(self.id)+" task_id: "+str(self.task_id)
+class Comment():
+    def __init__(self, id:int, owner_id:int, text:str, visible:bool,  date:datetime.datetime, modified:datetime.datetime, time_zone = "UTC", owner_str:str=""):
+        self.id = int(id)
+        self.owner_id=int(owner_id)
+        self.text = text
+        self.visible = visible
+        self.date = None
+        self.owner_str=owner_str
+        if date is not None:
+            self.date = pytz.timezone(time_zone).localize(date)
+        self.modified = None
+        if modified is not None:
+            self.modified = pytz.timezone(time_zone).localize(date)
 
+
+    def __repr__(self):
+        return "id: "+str(id)+" owner_id "+str(self.owner_id)+" text "+self.text+" visible: "+str(visible)
+    def __str__(self):
+        return text
+
+    def set_timezones(self, time_zone:str):
+        if self.date:
+            self.date = self.date.astimezone(pytz.timezone(time_zone))
+        if self.modified:
+            self.modified = self.modified.astimezone(pytz.timezone(time_zone))
 
 class Assignment():
     def __init__(self, id, name, reveal:datetime.datetime, deadline:datetime.datetime, tasks, files = [], time_zone = "UTC", submits = []):
-        self.id = id
+        self.id = int(id)
         self.reveal=reveal
         self.name = name
         if self.reveal is not None:
@@ -38,7 +71,10 @@ class Assignment():
         if self.deadline is not None:
             self.deadline = pytz.timezone(time_zone).localize(deadline)
         self.tasks = tasks
-        self.files = files
+        if files:
+            self.files = files
+        else:
+            self.files = []
         
         self.submits = submits
     def __str__(self):
@@ -50,7 +86,12 @@ class Assignment():
                 return True
         
         return False
-
+    def answer_length(self):
+        i = 0
+        for t in self.tasks:
+            
+            if t.answer is not None:
+                i+=1
     def __hash__(self):
         attr_list = [a for a in dir(self) if not callable(a)]
         return hash(tuple(attr_list))
@@ -76,13 +117,19 @@ class Assignment():
                 continue
             task.set_timezones(time_zone)
 
+    def __repr__(self):
+        return str(self)
 
 class Task():
-    def __init__(self, id, points, description , files=[], assignment_id=None, time_zone = "UTC", done = False, answer = None):
-        self.id = id
+    def __init__(self, id, number, points, description , files=[], assignment_id=None, time_zone = "UTC", done:bool = False, answer = None):
+        self.id = int(id)
+        self.number = number
         self.description = description
         self.points = points
-        self.files = files
+        if files:
+            self.files = files
+        else:
+            self.files = []
         self.answer = answer
         self.assignment_id = assignment_id
         self.done = done
@@ -98,10 +145,12 @@ class Task():
             file.set_timezones(time_zone)
             if self.answer:
                 self.answer.set_timezones(time_zone)
+        if self.answer:
+            self.answer.set_timezones(time_zone)
                 
     def __eq__(self, other):
         if isinstance(other, Task):
-            if self.id == other.id and self.description == other.description and self.points == other.points and self.assignment_id == other.assignment_id:
+            if self.id == other.id and self.description == other.description and self.points == other.points and self.assignment_id == other.assignment_id and self.number == other.number:
                 return True
         
         return False
@@ -110,21 +159,36 @@ class Task():
         attr_list = [a for a in dir(self) if not callable(a) and not a.startswith("__")]
         return ", ".join(attr_list)
 
+    def __repr__(self):
+        return str(self)
+
 class Answer():
     def __init__(self, id:int, description: str, reveal:datetime.datetime, files:list, time_zone = "UTC"):
-        self.id = id
+        self.id = int(id)
         if reveal is not None:
             self.reveal = pytz.timezone(time_zone).localize(reveal)
         else:
             self.reveal = None
         self.description = description
-        self.files = files
+        if files:
+            self.files = files
+        else:
+            self.files = []
 
 
-    def __hash__(self):
-        attr_list = [a for a in dir(self) if not callable(a)]
-        return hash(tuple(attr_list))
+    # def __hash__(self):
+    #     attr_list = [a for a in dir(self) if not callable(a) and not a.startswith("__")]
+    #     return hash(tuple(attr_list))
+    def __eq__(self, other):
+        if not isinstance(other, Answer):
+            return False
+        return other.id == self.id and other.description == self.description and self.files == other.files
 
+    def __str__(self):
+        file_str = ""
+        for f in self.files:
+            file_str+=", "+str(f)
+        return "id: "+str(self.id)+" desc "+self.description +"\t files: " +file_str
     def set_timezones(self, time_zone:str):
         for file in self.files:
             if not file:
@@ -133,11 +197,15 @@ class Answer():
         if self.reveal:
             self.reveal = self.reveal.astimezone(pytz.timezone(time_zone))
     
-
+    def __repr__(self):
+        return str(self)
 
 class File():
-    def __init__(self, id, name, date:datetime.datetime, time_zone = "UTC"):
-        self.id = id
+    def __init__(self, id:int, name:str, date:datetime.datetime, time_zone = "UTC"):
+        if id is None:
+            raise ValueError("id can't be null")
+        self.id = int(id)
+        
         self.name = name
         if date is not None:
             self.date = pytz.timezone(time_zone).localize(date)
@@ -146,12 +214,16 @@ class File():
 
     def set_timezones(self, time_zone:str):
         self.date = self.date.astimezone(pytz.timezone(time_zone))
+    
+    def __repr__(self):
+        return "id: "+str(self.id)+" name: "+self.name
 
     def __str__(self):
-        return "id: "+str(self.id)+"name: "+self.name
+        return self.name
+    def __eq__(self, other):
+        if not isinstance(other, File):
+            return False
+        return self.name == other.name and self.id == other.id 
     
-    def __hash__(self):
-        attr_list = [a for a in dir(self) if not callable(a)]
-        return hash(tuple(attr_list))
 
 

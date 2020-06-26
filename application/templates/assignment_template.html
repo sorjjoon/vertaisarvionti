@@ -1,0 +1,30 @@
+<h3> {{assignment.name}} </h3>
+    <p class="mb-4">
+        {% if current_user.role =="USER" %}
+        Tehtäviä tehty: {{assignment.submits|length ~ "/" ~ assignment.tasks|length}}
+        {% endif %}
+
+    </p>
+    {% for task in assignment.tasks %}
+    
+    <p class="mb-4"> 
+        <a href={{"./" ~ assignment.id ~ "/task/" ~ task.id }}>Tehtävä {{ task.number }}</a>   
+        {% if task.done %} 
+            <img src="{{ url_for('static', filename='images/checkmark-16.png') }}">  
+        {% endif %} 
+        
+        {% if task.answer %} 
+            {% if current_user.role =="USER" %} 
+                (malliratkaisu saatavilla)
+            {% else %}
+                (malliratkaisu asetettu)
+            {% endif %}
+        {% else %}
+            {% if current_user.role =="TEACHER" %}
+            
+                <span class="red_color">(malliratkaisua ei asetettu) </span>
+            {% endif %}
+        {% endif %} 
+         
+    </p>
+        {% endfor %}

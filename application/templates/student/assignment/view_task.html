@@ -1,65 +1,80 @@
+{% extends "layout.html" %}
 
-        
-       {% extends "layout.html" %} 
-       {% block body %}
-       
-       <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; " > 
-        <p> Kaikkien tehtävien materiaalit: {% for file in assignment.files %}
-            <a href={{url_for('get_file', file_id=file.id) }}><span class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a> {{ ",  " if not loop.last }}
-            {% endfor %}</p>
-        <p> {{ task.description}}</p>
-        <p>Max pisteet: {{task.points}}</p>
-        <p>Liitteet: {% for file in task.files %}
-            <a href={{url_for('get_file', file_id=file.id) }}><span class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a> {{ ", " if not loop.last }}
-            {% endfor %}</p>
+{% block body %}
 
-       </div>
-       <div class="container ml-2 mt-6 pb-2" style="border:1px solid #d9d9d9; " > 
+<div class="container mb-2 ml-2 pt-4 pb-2 add_border ">
+    {% include "task_template.html" %}
+</div>
+<div class="container mb-3 ml-2 mt-6 pb-2 add_border">
+
+    <table class="table">
+        <tbody>
+
+            <tr>
+                <th>Palautuksesi tilanne
+                </th>
+                <td>
+                    {% if assignment.submits %} <p style="color:green;"> Palautettu <small style="color:black"> -
+                            ({{get_deadline_string(assignment.submits[0].date)}})</small> </p>{% else %} <p
+                        style="color:red;">Ei palautettu </p>{% endif %}
+
+                </td>
+            </tr>
+            <tr>
+                <th>Tiedostosi</th>
+
+                {% if assignment.submits %}
+                <td>
+
+                    {% for file in assignment.submits[0].files %}
+
+                    <p >
+                        <a href={{url_for('get_file', file_id=file.id) }} class="slightly_smaller_font">
+                            <span class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> 
+                            {{file.name}}
+                        </a>
+                    </p>
+
+                    {% endfor %}
+                </td>
+
     
-            <table class="table">
-                <tbody>
-                    
-                    <tr>
-                      <th>Palautuksesi tilanne 
-                      </th>
-                        <td><p>{% if assignment.submits %} Palautettu {% else %}Ei palautettu {% endif %},
-                             (<small>{{get_deadline_string(assignment.deadline)}}</small>) </p></td>
-                    </tr>
-                    <tr>
-                      <th>Tiedostosi</th>
-                      {% if assignment.submits %}
-                      <p>{% for file in assignment.submits[0].files %}
-                        <td><a href={{url_for('get_file', file_id=file.id) }}><span class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a> {{ ", " if not loop.last }}</td>
-                        {% endfor %}</p>
-                            {% else %}
-                            <td>-</td>
     
-                            {% endif %}
-                        </td>
-                    </tr>
-                  <tr>
-                      <th>Vertaisarvionti</th>
-                          <td>emt</td>
-                    </tr>
-                </tbody>
-            </table>
-        {% if deadline_not_passed %}
-        
-        <form method="POST" action={{url_for("view_task", course_id=course_id, task_id=task.id, assignment_id = assignment.id)}} enctype="multipart/form-data">
-            <label for="files" id="files_label">  </label>
-            <input id='files' name="files" type="file" multiple="multiple" />
-            <input type="submit" value="Palauta">
-            <input type="hidden" name="a" value={{assignment.id}}>
-            <input type="hidden" name="t" value={{task.id}}>
-        </form>  
-        {% else %}
-        <p>
-            Et voi enää muokata palautustasi
-        </p>
-        {% endif %}
+    {% else %}
+    <td>-</td>
 
-    </div>
-    <form method="GET" action={{previous_url(request.url,2)}}>
-        <input type="submit" value="Takaisin">
+    {% endif %}
+
+    </tr>
+    <tr>
+        <th>Vertaisarvionti</th>
+        <td>emt</td>
+    </tr>
+    </tbody>
+    </table>
+    {% if deadline_not_passed %}
+
+    <form method="POST"
+        action={{url_for("view_task", course_id=course_id, task_id=task.id, assignment_id = assignment.id)}}
+        enctype="multipart/form-data">
+        <label for="files" id="files_label"> </label>
+        <input id='files' name="files" type="file" multiple="multiple" required />
+        <input type="submit" value="Palauta">
+        <input type="hidden" name="a" value={{assignment.id}}>
+        <input type="hidden" name="t" value={{task.id}}>
     </form>
-    {% endblock %}
+    {% else %}
+    <p>
+        Et voi enää muokata palautustasi
+    </p>
+    {% endif %}
+</div>
+{% set answer=task.answer %}
+{% if answer %}
+<div class="container mb-4 ml-2 mt-6 pb-2 add_border">
+    {% include "answer_template.html" %}
+</div>
+{% endif %}
+
+
+{% endblock %}
