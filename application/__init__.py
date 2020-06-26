@@ -9,17 +9,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from flask import Response
 
-# class LaxResponse(Response):
-#     def set_cookie(self, *args, **kwargs):
-#         cookie = dump_cookie(*args, **kwargs)
-#         if 'samesite' in kwargs and kwargs['samesite'] is None or 'samesite' not in kwargs:
-#             cookie = "{}; {}".format(cookie, b'SameSite=Lax;')
-
-#         self.headers.add(
-#             'Set-Cookie',
-#             cookie
-#         )
-
+class LaxResponse(Response):
+    #Just adding samesite lax, in case it's not set
+    def set_cookie(self, *args, **kwargs):
+        if 'samesite' not in kwargs or ('samesite' in kwargs and kwargs['samesite'] is None):
+            kwargs['samesite']="Lax"
+        super().set_cookie(*args, **kwargs)
+        
 
 
 def create_app(config):  
@@ -82,7 +78,7 @@ def create_app(config):
     app.logger.info("configuring session")
     
     #configuring custom response class, to make make same site lax the default
-    #app.response_class = LaxResponse
+    app.response_class = LaxResponse
 
     app.config["SESSION_TYPE"] = "sqlalchemy"
     app.config["PERMANENT_SESSION_LIFETIME"] = 60 *60 * 24 * 7 # 1 week lifetime
