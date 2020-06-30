@@ -26,6 +26,7 @@
   display: inline-block;
   line-height: 1em;
   width: 0.72em;
+  margin-left: 0;
 }
 
 .fiv-cla:before {

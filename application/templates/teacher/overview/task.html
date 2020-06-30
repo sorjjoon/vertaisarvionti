@@ -6,14 +6,15 @@
   {% include "task_template.html" %}
 </div>
 <div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
-  <h3 class="mt-3 mb-3">
+  <h4 class="mt-3 mb-3">
     Malliratkaisu
-  </h3>
+  </h4>
   {% if not task.answer %}
 <h6 style="color:red;">
 Malliratkaisua ei ole asetettu
 </h6>
   {% else %}
+  {% set answer=task.answer %}
     <h6 style="color:green;" class="mb-3">
       Malliratkaisu on asetettu. 
     </h6>
@@ -21,79 +22,21 @@ Malliratkaisua ei ole asetettu
       Näkyvissä opiskelijoille: {{task.answer.reveal.strftime("%d.%m.%y, %H:%M")}}
     </p>
     <p><small>{{get_deadline_string(task.answer.reveal)}}</small></p>
-    <p>
-      {{task.answer.description}}
-
-    </p>
-    <p>Liitteet:</p> {% for file in task.answer.files %}
-    <p class="smaller_font">
-      <a href={{url_for('get_file', file_id=file.id) }}><span
-          class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
-        </p>
-      {% endfor %}
+    
+      
+      
   {% endif %}
-</div>
-<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
-  <h4>
-    Aseta malliratkaisu
-  </h4>
   <form method="POST"
-    action={{url_for("task_overview", course_id=course_id, task_id=task.id, assignment_id=assignment.id)}}
-    enctype="multipart/form-data">
-    <table class="mt-4 mb-4">
-      <thead>
-        <p>
-          
-        </p>
-      </thead>
-      <tbody>
+      action={{url_for("task_overview", course_id=course_id, task_id=task.id, assignment_id=assignment.id)}}
+      enctype="multipart/form-data">
+    {% include "answer_form_template.html" %}
 
-        <tr>
-          <td>
-            {{ form.reveal.label }}
-          </td>
-
-          <td>
-            {{ form.reveal(id="answer_reveal", disabled="disabled") }}
-          </td>
-          <td>
-            <input type="checkbox" id="reveal_after" name="reveal_after" value="1" onclick="toggleElement('reveal_after', 'answer_reveal', 'disabled', 'disabled')" checked>
-  <label for="reveal_after"> Heti palautuspäivän jälkeen</label>
-          </td>
-          <td>
-            <ul>
-              {% if reveal_error is defined %}
-              <li>{{ reveal_error }}</li>
-              {% endif %}
-            </ul>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            {{ form.description.label }}
-          </td>
-
-          <td>
-            {{ form.description }}
-          </td>
-        </tr>
-        <tr>
-          <td>
-            {{ form.files.label }}
-          </td>
-
-          <td>
-            {{ form.files }}
-          </td>
-        </tr>
-
-
-        {{ form.csrf_token }}
-      </tbody>
-    </table>
-
-    <input type="submit" name="submit" value="Muuta malliratkaisua">
+    
   </form>
+</div>
+
+
+    
 </div>
 <table class="table">
   <thead>

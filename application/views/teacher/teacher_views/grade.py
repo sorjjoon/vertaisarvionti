@@ -2,7 +2,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, validators, ValidationError, BooleanField, FormField, FieldList, TextAreaField
 from datetime import datetime, timezone
-from flask import current_app as app, session
+from flask import current_app as app, session, Response
 from application import db
 import pytz
 import datetime
@@ -24,15 +24,22 @@ def find_next_student(id_list:list, current:int):
 
 
 
-
 @app.route("/view/<course_id>/overview/<assignment_id>/task/<task_id>/grade/<student_id>",  methods=["GET", "POST"])
 @login_required
 def grade_student(course_id, assignment_id, task_id, student_id):
-    print("grading student "+str(student_id))
+    app.logger.info("grading student %s, task %s", student_id, task_id)
+    assignment = db.select_assignment(assignment_id, task_id=task_id)
+    
     student_list = session.get("next_list")
     this_student = db.get_user_by_id(student_id)
+    student_dic = db.select_submits([student_id], [task_id], set_feedback=True).get(int(student_id))
+    if student_dic:
+        submit = student_dic.get(int(task_id))
+    else:
+        submit=None
+    
     if not student_list:
-        submits = db.get_all_submits(assignment_id, task_id=task.id, convert_to_timezone = "Europe/Helsinki")
+        submits = db.get_all_submits(assignment_id, task_id=task_id, convert_to_timezone = "Europe/Helsinki")
         all_students = db.select_students(course_id, current_user.get_id())
         student_ids_with_submits = [s.id for s in all_students if submits.get(s.id)]
         student_ids_with_submits.append("id"+str(task_id))
@@ -48,7 +55,7 @@ def grade_student(course_id, assignment_id, task_id, student_id):
         else:
             next_url = url_for("task_overview",course_id=course_id, assignment_id=assignment_id, task_id=task_id)
 
-    assignment = db.select_assignment(assignment_id,task_id=task_id, for_student=False, set_task_files=True)
-    db.set_submits(assignment, student_id, task_id=task_id)
-
-    return render_template("/teacher/grade/task.html", next_url = next_url, assignment=assignment, task=assignment.tasks[0], this_student=this_student)
+    
+    task = assignment.tasks[0]
+    feedback = db.select_feedback(current_user.get_id(), submit_id=submit.id)
+    return render_template("/teacher/grade/task.html",feedback=feedback, assignment=assignment,task=task, next_url = next_url , submit=submit, this_student=this_student)

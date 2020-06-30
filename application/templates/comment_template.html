@@ -1,0 +1,25 @@
+{% extends "layout.html" %} 
+{% block body %}
+<div class="container add_border">
+
+    <button class='btn pull-right comment_button'> 
+        <span>&#9881;</span>
+          </button> 
+        {% if comment is defined %}
+    <form method="POST" action="{{url_for('update_comment', comment_id=comment.id)}}">
+        <textarea rows="4" cols="50" name="comment" >
+            Enter text here...</textarea>
+        <!-- <input type="text" class="comment_field" id="{{'comment_text' ~ comment.id}}" name="comment_text" value="{{comment.txt}}"> -->
+        <input type="submit" id="{{'comment_submit' ~ comment.id}}" value="Kommentoi">
+    
+    {% else %}
+    <form method="POST" action="{{url_for('new_comment')}}">
+        <textarea rows="4" cols="50" name="comment" >
+            Enter text here...</textarea>
+        <input type="submit" id="comment_submit_new" value="Kommentoi">
+        <input type="hidden" name="target_string" value="{{target_string}}">
+    {% endif %}
+        <input type="hidden" name="origin" value={{request.url}}>
+</form>
+</div>
+{% endblock %}

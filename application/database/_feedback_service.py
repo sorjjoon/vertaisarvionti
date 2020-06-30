@@ -17,28 +17,55 @@ from sqlalchemy.exc import IntegrityError
 
 
 from application.auth.account import account
-from application.domain.assignment import Comment
+from application.domain.assignment import Comment, Feedback
 from datetime import datetime
 
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .data import data
+def select_feedback(self, user_id:int, submit_id=None):
+    if submit_id is None:
+        return None
+    sql = select([self.feedback])
 
-def insert_feedback(self, user_id:int, submit_id:int=None, visible:bool=False, text:str="") -> int:
+    if submit_id:
+        sql = sql.where(self.feedback.c.submit_id== submit_id)
+    with self.engine.connect() as conn:
+        row = conn.execute(sql).first()
+        if row is None:
+            return None
+        
+        return Feedback(id=row[self.feedback.c.id], points=row[self.feedback.c.points], modified = row[self.feedback.c.modified], date=row[self.feedback.c.timestamp], submit_id=row[self.feedback.c.submit_id], owner_id = row[self.feedback.c.owner_id], visible = row[self.feedback.c.visible])
+
+
+def grade_submit(self, user_id:int, submit_id, points, visible:bool=None):
+    self.logger.info("grading submit %s for user %s", submit_id, user_id)
+    sql = select([self.feedback.c.id]).where(self.feedback.c.submit_id== submit_id)
+    with self.engine.connect() as conn:
+        rs = conn.execute(sql)
+        row = rs.first()
+        if row is None:
+            self.logger.info("no feedback found, creating new")
+            self.insert_feedback(user_id, submit_id, points, visible=visible)
+        else:
+            id = row[self.feedback.c.id]
+            self.logger.info("old feedback id: %s found, updating", id)
+            self.update_feedback(id, user_id, points=points, visible=visible)
+        self.logger.info("success!")
+
+def insert_feedback(self, user_id:int, submit_id, points, visible:bool=False) -> int:
     """Insert feedback
 
     Args:
         user_id (int): [description]
-        submit_id (int, optional): [description]. Defaults to None.
+        submit_id (int).
         visible (bool, optional): [description]. Defaults to False.
-        text (str, optional): [description]. Defaults to "".
+        
 
     Returns:
         int: [description]
     """
 
-    sql = self.feedback.insert().values(owner_id=user_id, visible=visible, text=text, submit_id=submit_id)
+    sql = self.feedback.insert().values(owner_id=user_id, visible=visible, points=points, submit_id=submit_id)
     self.logger.info("Inserting feedback for submit %s for user %s ", submit_id, user_id)
     with self.engine.connect() as conn:
         rs = conn.execute(sql)
@@ -58,27 +85,29 @@ def delete_feedback(self, feedback_id:int, user_id:int):
 
 
 
-def update_feedback(self, feedback_id:int, user_id:int, text:str=None, visible:bool=None):
-    """No update in case text and visible left null
+def update_feedback(self, feedback_id:int, user_id:int, points=None, visible:bool=None):
+    """No update in case points and visible left null
 
     Args:
         self (data): [description]
         comment_id (int): [description]
         user_id (int): [description]
-        text (str, optional): [description]. Defaults to None.
+       
         visible (bool, optional): [description]. Defaults to None.
     """
-    self.logger.info("Updating feedback %s for user %s", comment_id, user_id)
-    if text==None==visible:
-        self.logger.info("no update, text and visible None")
+    self.logger.info("Updating feedback %s for user %s", feedback_id, user_id)
+    if None==visible==points:
+        self.logger.info("no update and visible None")
         return
     sql = self.feedback.update().where((self.feedback.c.id==feedback_id) & (self.feedback.c.owner_id==user_id)).values(modified=func.now())
-    if text is not None:
-        self.logger.info("Updating text")
-        sql = sql.values(text=text)
+    
     if visible is not None:
         self.logger.info("Updating visibility")
         sql = sql.values(visible=visible)
+    if points is not None:
+        self.logger.info("Updating points")
+        sql = sql.values(points=points)
+        
     with self.engine.connect() as conn:
         rs = conn.execute(sql)
         self.logger.info("feedback update success. %s rows changed", rs.rowcount)

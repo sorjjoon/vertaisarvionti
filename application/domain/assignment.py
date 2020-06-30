@@ -1,17 +1,42 @@
 import datetime
 import pytz
-from dataclasses import dataclass
 
-class Submit():
-    def __init__(self, id:int=None, points:int=None, date:datetime.datetime=None, task_id:int=None, files=None, description:str=None, time_zone = "UTC"):
+class Feedback():
+    def __init__(self, id:int=None, points=None,modified=None, date:datetime.datetime=None, submit_id:int=None, files=None, owner_id=None, description=None, visible=None, time_zone = "UTC"):
         self.id = int(id)
-        self.task_id = int(task_id)
+        
+        self.submit_id = int(submit_id)
+        self.points = points
+        self.owner_id=owner_id
+        self.modified = modified
         if files:
-            self.files = files
+            self.files=files
         else:
             self.files = []
+        self.visible=visible
+        self.date = None
+        if date is not None:
+            self.date = pytz.timezone(time_zone).localize(date)
+        if modified is not None:
+            self.modified = pytz.timezone(time_zone).localize(modified)
+    def set_timezones(self, time_zone):
+        if self.date:
+            self.date = self.date.astimezone(pytz.timezone(time_zone))
+        if self.modified:
+            self.modified = self.modified.astimezone(pytz.timezone(time_zone))
+
+
+
+class Submit():
+    def __init__(self, id:int=None, date:datetime.datetime=None, task_id:int=None, files=[],feedback=None, description:str=None, time_zone = "UTC"):
+        self.id = int(id)
+        self.task_id = int(task_id)
+        self.files = files
+        
         self.description = description
         self.date = None
+        self.feedback = feedback
+        
         if date is not None:
             self.date = pytz.timezone(time_zone).localize(date)
 
@@ -27,6 +52,9 @@ class Submit():
     def set_timezones(self, time_zone:str):
         if self.date:
             self.date = self.date.astimezone(pytz.timezone(time_zone))
+
+        if self.feedback:
+            self.feedback.set_timezones(time_zone)
 
     def __repr__(self):
         return str(self)
@@ -49,9 +77,9 @@ class Comment():
 
 
     def __repr__(self):
-        return "id: "+str(id)+" owner_id "+str(self.owner_id)+" text "+self.text+" visible: "+str(visible)
+        return "id: "+str(id)+" owner_id "+str(self.owner_id)+" text "+self.text+" visible: "+str(self.visible)
     def __str__(self):
-        return text
+        return self.text
 
     def set_timezones(self, time_zone:str):
         if self.date:

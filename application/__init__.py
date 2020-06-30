@@ -62,7 +62,7 @@ def create_app(config):
         if config=="DATA_TEST":
             data.drop_all(sql_alchemy_db.get_engine())
 
-        logging.getLogger("sqlalchemy").setLevel(logging.INFO)
+        logging.getLogger("sqlalchemy").setLevel(logging.DEBUG)
         logging.getLogger("sqlalchemy").propagate = False
 
         sql_handler = logging.FileHandler("sql_log.log","w")

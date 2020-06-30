@@ -71,8 +71,8 @@ def task_overview(course_id, assignment_id, task_id):
             if not request.form.get("reveal_after"):
                 app.logger.info("custom date for reveal "+str(task_id))
                 reveal = pytz.timezone("Europe/Helsinki").localize(form.reveal.data)
-
-            db.update_answer(current_user.get_id(),   task_id, request.files.getlist("files"), form.description.data, reveal=reveal )
+            files_to_delete = request.form.getlist("del_files", int)
+            db.update_answer(current_user.get_id(), task_id, request.files.getlist("files"), form.description.data, reveal=reveal, files_to_delete=files_to_delete )
             app.logger.info("update success, redirecting")
             form = None
             return redirect(url_for("task_overview", course_id=course_id, assignment_id=assignment_id, task_id=task_id))

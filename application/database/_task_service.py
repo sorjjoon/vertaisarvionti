@@ -57,7 +57,7 @@ def set_task_answer(self, task: Task, for_student=True) -> None:
         
         
 
-def update_answer(self, user_id: int, task_id: int, files: List[File], description: str, reveal: datetime.datetime = pytz.utc.localize(datetime.datetime.utcnow())) -> int:
+def update_answer(self, user_id: int, task_id: int, files: List[File], description: str, files_to_delete=None, reveal: datetime.datetime = pytz.utc.localize(datetime.datetime.utcnow())) -> int:
     """Update the database answer to match. If no answer was submitted, a new one is created. If one is found, it is replaced
         Doesn't check if the user has rights to update the answer
     Arguments:
@@ -96,6 +96,7 @@ def update_answer(self, user_id: int, task_id: int, files: List[File], descripti
         row = rs.first()
 
         if row is None:
+            new_answer = True
             self.logger.info("no old answer found, creating new entry")
             sql = self.answer.insert().values(
                 reveal=reveal, task_id=task_id, description=description)
@@ -103,12 +104,16 @@ def update_answer(self, user_id: int, task_id: int, files: List[File], descripti
             id = rs.inserted_primary_key[0]
             self.logger.info("Insert success! id: %s",id)
         else:
-
+            new_answer = False
             id = row[self.answer.c.id]
             self.logger.info("old answer with id "+str(id)+" found, updating values")
             sql = update(self.answer).values(reveal=reveal, task_id=task_id,
                                              description=description).where(self.answer.c.id == id)
             conn.execute(sql)
             self.logger.info("Update success!")
-        self.update_file(user_id, files, answer_id=id)
+        
+        if new_answer:
+            self.update_file(user_id, files, answer_id=id)
+        else:
+            self.update_file(user_id, files, answer_id=id, files_to_delete=files_to_delete)
     return id

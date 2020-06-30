@@ -1,0 +1,91 @@
+
+<table class="mt-2">
+    {% if answer is defined %}
+    <tr>
+        <td>
+            {{answer.description}}
+        </td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td>
+          {{ form.reveal.label }}
+        </td>
+
+        <td>
+          {{ form.reveal(id="answer_reveal", disabled="disabled") }}
+        </td>
+        <td>
+          <input type="checkbox" id="reveal_after" name="reveal_after" value="1" onclick="toggleElement('reveal_after', 'answer_reveal', 'disabled', 'disabled')" checked>
+<label for="reveal_after"> Heti palautuspäivän jälkeen</label>
+        </td>
+        <td>
+          <ul>
+            {% if reveal_error is defined %}
+            <li>{{ reveal_error }}</li>
+            {% endif %}
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          {{ form.description.label }}
+        </td>
+
+        <td>
+          {{ form.description(placeholder="Jätä tyhjäksi, jos et halua muuttaa") }}
+          
+        </td>
+      </tr>
+      <tr>
+        <td>
+          {{ form.files.label }}
+        </td>
+
+        <td>
+          {{ form.files }}
+        </td>
+      </tr>
+
+
+      {{ form.csrf_token }}
+    
+    <tr>
+        <td>
+            <p>
+                Liitteet:
+            </p>
+        </td>
+        <td>
+            Poista
+
+        </td>
+    </tr>
+    {% if answer is defined %}
+    {% for file in answer.files %}
+    <tr class="pt-1 pb-1">
+        <td id="file_td">
+           <p class="smaller_font center_text" id={{"file" ~ file.id}}> <a href={{url_for('get_file', file_id=file.id) }}><span
+                    class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span>
+                {{file.name}}</a>
+            </p>
+            </td>
+            <td>
+                <input type="checkbox" id="{{'check' ~ file.id}}" name="del_files" value="{{file.id}}"  onclick="toggleProperty('{{'check' ~ file.id}}', '{{"file" ~ file.id}}', 'text-decoration', 'line-through')" >
+                <script>
+                window.addEventListener("load", function (event) {
+                    toggleProperty('{{'check' ~ file.id}}', '{{"file" ~ file.id}}', 'text-decoration', 'line-through')
+                    })
+                 </script>
+
+            </td>
+        
+    </tr>
+    {% endfor %}
+    <tr>
+        <td>
+            <input type="submit" name="submit" value="Muuta malliratkaisua" class="mt-3 mb-3">
+        </td>
+    </tr>
+    {% endif %}
+    

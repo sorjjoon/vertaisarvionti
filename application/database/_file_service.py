@@ -149,7 +149,7 @@ def check_user_view_rights(self, user_id:int, file_id:int, is_teacher=False) -> 
 
 
 
-def update_file(self, user_id:int,files:list, submit_id:int=None, assignment_id:int=None, task_id:int=None, answer_id:int=None, files_to_delete:list = []) -> int: 
+def update_file(self, user_id:int,files:list, submit_id:int=None, assignment_id:int=None, task_id:int=None, answer_id:int=None, files_to_delete:list = None) -> int: 
     """deletes all files matching given parameters, then inserts new files with the same parameters. Doesn't delete files user doesn't own, but doesn't check if the user has rights
     to insert files for the activity he is inserting them for. At least one of the given arugments must not be null
     if assignment id is not given, doesn't check that the other ids provided are null (if multiple are checks that all non nulls match), if assignment id is given, checks that other non given fiels are null
@@ -177,8 +177,11 @@ def update_file(self, user_id:int,files:list, submit_id:int=None, assignment_id:
     
     if submit_id ==assignment_id ==task_id ==answer_id == None:
         raise ValueError("all parameters null for file update")
-
+    
     sql = self.file.delete().where(self.file.c.owner_id == user_id)
+
+    
+
 
     if submit_id is not None:
         
@@ -195,10 +198,11 @@ def update_file(self, user_id:int,files:list, submit_id:int=None, assignment_id:
         self.logger.info("Updating file for user %s assignment id: %s",user_id,assignment_id)
         sql = sql.where(self.file.c.assignment_id == assignment_id)
 
-    if files_to_delete:
+    if files_to_delete is not None:
         self.logger.info("only deleting files: "+str(files_to_delete))
         sql = sql.where(self.file.c.id.in_(files_to_delete))
-
+    
+    
     with self.engine.connect() as conn:
         
         rs =conn.execute(sql)

@@ -7,6 +7,8 @@ from sqlalchemy.exc import IntegrityError
 import io
 import datetime
 import pytz
+import json
+
 from timeit import default_timer as timer
 from application.domain.course import Course
 from application import db
@@ -34,7 +36,7 @@ def utility_processor():
         
         return extension
 
-    def get_deadline_string(deadline, now = datetime.datetime.now(pytz.utc)):
+    def get_deadline_string(deadline, now = datetime.datetime.now(pytz.utc), after="sitten", before="jäljellä"):
         if deadline is None:
             return "Ei palautuspäivää"
         
@@ -67,12 +69,15 @@ def utility_processor():
             first = str(minutes)+" minuuttia ja "
             second = str(seconds) +" sekuntia"
 
-        if now > deadline_adjusted:
-            after = " sitten"
-        else:
-            after = " jäljellä"
-        return first + second+after
+        
 
+        if now > deadline_adjusted:
+            return first + second+after
+
+        else:
+            return first + second+before
+
+        
     def previous_url(current_url):
         try:
             current_url = current_url[:current_url.rindex("/")]
@@ -104,9 +109,12 @@ def validate_user_access():
         return None
 
     url = request.path
-    
+    if "static" in url:
+        return None
+        
     user_id = current_user.get_id()
     role = current_user.role
+    app.logger.info("User %s attempted access to %s", user_id, url)
     if "/overview/" in url:
         if role != "TEACHER":
             return redirect(url_for("index"))
@@ -114,7 +122,7 @@ def validate_user_access():
     assignment_id = None
     task_id = None
     course_id = None
-    app.logger.info("User %s attempted access to %s", current_user.get_id(), url)
+    
     try:
         for i in range(len(parts)):
             part = parts[i]
@@ -126,13 +134,28 @@ def validate_user_access():
                 task_id = int(parts[i+1])
     except:
         return None
-    if not db.check_access_rights(current_user.get_id(), current_user.role, course_id=course_id, assignment_id=assignment_id, task_id=task_id):
-        
+    if not db.check_access_rights(user_id, current_user.role, course_id=course_id, assignment_id=assignment_id, task_id=task_id):
         
         return redirect(url_for("index"))
         
 
+@app.route("/update", methods=["UPDATE"])
+def update_element():
+    try:
+        json_dic = json.loads(request.data)
+        target = json_dic.get("target")
+        if target=="feedback":
+            submit_id = int(json_dic["submit_id"])
+            points = int(json_dic["points"])
+            visible = bool(json_dic["visible"])
+            db.grade_submit(current_user.get_id(), submit_id,points, visible=visible)
 
+            return Response("", 200)
+        else:
+            return Response("", 400)
+    except (KeyError, ValueError) as r:
+        app.logger.error(r, exc_info=True)
+        return Response("", 400)
 @app.route("/get/<int:file_id>")
 @login_required
 def get_file(file_id):

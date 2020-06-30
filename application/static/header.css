@@ -5,7 +5,13 @@ body { padding: 0; }
 .larger_font {
    font-size: 19px;
 }
-
+.comment_button {
+padding: 0;
+background: none;
+}
+.comment_field {
+   width: 50%
+}
 .smaller_font {
    font-size: 12px;
 }
@@ -22,7 +28,15 @@ body { padding: 0; }
     margin-right:auto;
     margin-left:auto
  }
-
+ .add_border {
+   border:1px solid #d9d9d9;
+}
+.remove_border_top {
+   border-top: 0px;
+}
+.center_text {
+   text-align: center
+}
 p {
    margin-bottom: 1mm;
    margin-bottom: 1mm;
@@ -46,10 +60,16 @@ p {
    margin-left: 0;
    margin-right: 0;
 }
-.add_border {
-   border:1px solid #d9d9d9;
-}
+
 
  span {
    display: inline-block;
+ }
+
+ #file_td{
+    padding-right: 10mm;
+ }
+
+ #grade_points {
+    width: 45px;
  }
