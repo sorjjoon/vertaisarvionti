@@ -15,7 +15,9 @@ background: none;
 .smaller_font {
    font-size: 12px;
 }
-
+input.larger_checkbox { 
+   transform: scale(1.2);
+} 
 .slightly_smaller_font {
    font-size: 13px;
 }
@@ -28,6 +30,13 @@ background: none;
     margin-right:auto;
     margin-left:auto
  }
+ .vertical-center {
+   margin: 0;
+   position: absolute;
+   top: 50%;
+   -ms-transform: translateY(-50%);
+   transform: translateY(-50%);
+ }
  .add_border {
    border:1px solid #d9d9d9;
 }
@@ -35,7 +44,7 @@ background: none;
    border-top: 0px;
 }
 .center_text {
-   text-align: center
+   text-align: left
 }
 p {
    margin-bottom: 1mm;

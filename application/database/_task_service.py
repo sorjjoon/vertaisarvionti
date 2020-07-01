@@ -100,6 +100,7 @@ def update_answer(self, user_id: int, task_id: int, files: List[File], descripti
             self.logger.info("no old answer found, creating new entry")
             sql = self.answer.insert().values(
                 reveal=reveal, task_id=task_id, description=description)
+            
             rs = conn.execute(sql)
             id = rs.inserted_primary_key[0]
             self.logger.info("Insert success! id: %s",id)
@@ -107,8 +108,9 @@ def update_answer(self, user_id: int, task_id: int, files: List[File], descripti
             new_answer = False
             id = row[self.answer.c.id]
             self.logger.info("old answer with id "+str(id)+" found, updating values")
-            sql = update(self.answer).values(reveal=reveal, task_id=task_id,
-                                             description=description).where(self.answer.c.id == id)
+            sql = update(self.answer).values(reveal=reveal, task_id=task_id).where(self.answer.c.id == id)
+            if description is not None:
+                sql = sql.values(description=description)
             conn.execute(sql)
             self.logger.info("Update success!")
         

@@ -103,7 +103,7 @@ def create_app(config):
 
     #upload
     app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), "files")
-
+    
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -113,6 +113,7 @@ def create_app(config):
     with app.app_context():
         import application.views.common
         import application.views.utils
+        import application.views.comment
 
         import application.auth.views
         import application.auth.forms
@@ -126,5 +127,7 @@ def create_app(config):
         import application.views.student.course  
         import application.views.student.assignment  
         import application.views.student.task 
+        
     app.logger.info("app creation success!")
+    
     return app

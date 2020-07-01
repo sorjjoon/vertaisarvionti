@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 from application.auth.account import account
-from application.domain.assignment import Comment
+from application.domain.comment import Comment
 from datetime import datetime
 
 from typing import TYPE_CHECKING

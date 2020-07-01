@@ -306,7 +306,7 @@ def select_file_details(self, assignment_id:int=None, task_id:int=None, file_id:
         List[File] -- [description]
     """
 
-    sql = select([self.file.c.id, self.file.c.name, self.file.c.upload_date])
+    sql = select([self.file.c.id, self.file.c.name, self.file.c.upload_date]).order_by(self.file.c.id)
     if file_id is not None:
         self.logger.info("Fetching information for file id: %s", file_id)
         sql = sql.where(self.file.c.id == file_id)

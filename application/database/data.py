@@ -282,7 +282,7 @@ class data():
     from ._submit_service import update_submit, select_submits
     from ._teacher_stats import count_students
     from ._task_service import set_task_answer, update_answer
-    from ._overview_service import get_all_submits
+    from ._overview_service import get_all_submits, get_course_task_stats, get_first_downloads
     from ._view_rights import check_access_rights
     from ._feedback_service import update_feedback, grade_submit, delete_feedback, insert_feedback, select_feedback
     from ._comment_service import insert_comment,select_comments, update_comment

@@ -3,9 +3,9 @@ import pytz
 
 class Feedback():
     def __init__(self, id:int=None, points=None,modified=None, date:datetime.datetime=None, submit_id:int=None, files=None, owner_id=None, description=None, visible=None, time_zone = "UTC"):
-        self.id = int(id)
+        self.id = id
         
-        self.submit_id = int(submit_id)
+        self.submit_id = submit_id
         self.points = points
         self.owner_id=owner_id
         self.modified = modified
@@ -39,7 +39,7 @@ class Submit():
         
         if date is not None:
             self.date = pytz.timezone(time_zone).localize(date)
-
+        
 
     def __eq__(self, other):
         if isinstance(other, Submit):
@@ -61,31 +61,7 @@ class Submit():
     
     def __str__(self):
         return "id: "+str(self.id)+" task_id: "+str(self.task_id)
-class Comment():
-    def __init__(self, id:int, owner_id:int, text:str, visible:bool,  date:datetime.datetime, modified:datetime.datetime, time_zone = "UTC", owner_str:str=""):
-        self.id = int(id)
-        self.owner_id=int(owner_id)
-        self.text = text
-        self.visible = visible
-        self.date = None
-        self.owner_str=owner_str
-        if date is not None:
-            self.date = pytz.timezone(time_zone).localize(date)
-        self.modified = None
-        if modified is not None:
-            self.modified = pytz.timezone(time_zone).localize(date)
 
-
-    def __repr__(self):
-        return "id: "+str(id)+" owner_id "+str(self.owner_id)+" text "+self.text+" visible: "+str(self.visible)
-    def __str__(self):
-        return self.text
-
-    def set_timezones(self, time_zone:str):
-        if self.date:
-            self.date = self.date.astimezone(pytz.timezone(time_zone))
-        if self.modified:
-            self.modified = self.modified.astimezone(pytz.timezone(time_zone))
 
 class Assignment():
     def __init__(self, id, name, reveal:datetime.datetime, deadline:datetime.datetime, tasks, files = [], time_zone = "UTC", submits = []):

@@ -10,70 +10,74 @@
     Malliratkaisu
   </h4>
   {% if not task.answer %}
-<h6 style="color:red;">
-Malliratkaisua ei ole asetettu
-</h6>
+  <h6 style="color:red;">
+    Malliratkaisua ei ole asetettu
+  </h6>
   {% else %}
   {% set answer=task.answer %}
-    <h6 style="color:green;" class="mb-3">
-      Malliratkaisu on asetettu. 
-    </h6>
-    <p>
-      Näkyvissä opiskelijoille: {{task.answer.reveal.strftime("%d.%m.%y, %H:%M")}}
-    </p>
-    <p><small>{{get_deadline_string(task.answer.reveal)}}</small></p>
-    
-      
-      
+  <h6 style="color:green;" class="mb-3">
+    Malliratkaisu on asetettu.
+  </h6>
+  <p>
+    Näkyvissä opiskelijoille: {{task.answer.reveal.strftime("%d.%m.%y, %H:%M")}}
+  </p>
+  <p><small>{{get_deadline_string(task.answer.reveal)}}</small></p>
+
+
+
   {% endif %}
   <form method="POST"
-      action={{url_for("task_overview", course_id=course_id, task_id=task.id, assignment_id=assignment.id)}}
-      enctype="multipart/form-data">
+    action={{url_for("task_overview", course_id=course_id, task_id=task.id, assignment_id=assignment.id)}}
+    enctype="multipart/form-data">
     {% include "answer_form_template.html" %}
 
-    
+
   </form>
 </div>
-
-
-    
-</div>
-<table class="table">
-  <thead>
-    <tr>
-
-      <th scope="col">Opiskelijan nimi</th>
-
-      <th scope="col">Palautus tehty </th>
-
-      <th scope="col">Nykyiset pisteet </th>
-
-      <th scope="col">Opiskelija voi nähdä palautteensa </th>
-    </tr>
-  </thead>
-
-  {% for s in students %}
-
-  <tbody>   
+<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+  <table class="table">
+    <thead>
       <tr>
-          <td><a href="{{url_for('grade_student', course_id=course_id, student_id=s.id, assignment_id = assignment.id, task_id = task.id)}}">{{s.last_name}}, {{s.first_name}}</a></td>
-          {% if submits.get(s.id) %}
-          <td> {{submits.get(s.id)[0].date.strftime("%d.%m.%y, %H:%M") }} </td>
-          <td> {{submits.get(s.id)[0].points }} </td>
-          <td> TODO </td>
-            {% else %}
-            <td>Ei palautettu</td>
-          <td> 0 </td>
-          <td>-</td>
-          
-            {% endif %}
-          
+
+        <th scope="col-5">Opiskelijan nimi</th>
+
+        <th scope="col-1">Palautus tehty </th>
+
+        <th scope="col-2">Nykyiset pisteet </th>
+
+        <th scope="col-3">Opiskelija voi nähdä pisteensä </th>
+
+        <th scope="col-1"><button>Päivitä </button> </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+
+
+      <tr>
+        <td class="col-5"><a
+            href="{{url_for('grade_student', course_id=course_id, student_id=s.id, assignment_id = assignment.id, task_id = task.id)}}">{{s.last_name}},
+            {{s.first_name}}</a></td>
+        {% if submits.get(s.id) %}
+        <td class="col-3"> {{submits.get(s.id)[0].date.strftime("%d.%m.%y, %H:%M") }} </td>
+        <td class="col-2"> {{ submits.get(s.id)[0].feedback.points if submits.get(s.id)[0].feedback.points != None }}
+        </td>
+        <td class="col-3">
+
+          <input type="checkbox" id="grade_visible" name="{{'vis' ~ submits.get(s.id).id }}" class="larger_checkbox"
+            {% if submits.get(s.id)[0].feedback.visible %} checked {% endif %}>
+
+        </td>
+        {% else %}
+        <td class="col-3">Ei palautettu</td>
+        <td class="col-2"> </td>
+        <td class="col-1">-</td>
+
+        {% endif %}
+
       </tr>
       {% endfor %}
-  </tbody>
-
-
-
-</table>
-
+    </tbody>
+  </table>
+</div>
 {% endblock %}

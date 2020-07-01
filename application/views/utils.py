@@ -1,14 +1,14 @@
 
 #from application import app, db
 from flask import render_template, redirect, url_for, request, Response, send_file
-from flask import current_app as app
+from flask import current_app as app, g
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 import io
 import datetime
 import pytz
 import json
-
+from timeit import default_timer as timer
 from timeit import default_timer as timer
 from application.domain.course import Course
 from application import db
@@ -36,7 +36,7 @@ def utility_processor():
         
         return extension
 
-    def get_deadline_string(deadline, now = datetime.datetime.now(pytz.utc), after="sitten", before="jäljellä"):
+    def get_deadline_string(deadline, now = datetime.datetime.now(pytz.utc), after=" sitten", before=" jäljellä"):
         if deadline is None:
             return "Ei palautuspäivää"
         
@@ -105,13 +105,14 @@ def utility_processor():
 
 @app.before_request
 def validate_user_access():
+    g.start = timer()
     if not current_user.is_authenticated:
         return None
 
     url = request.path
     if "static" in url:
         return None
-        
+    
     user_id = current_user.get_id()
     role = current_user.role
     app.logger.info("User %s attempted access to %s", user_id, url)
@@ -138,6 +139,17 @@ def validate_user_access():
         
         return redirect(url_for("index"))
         
+@app.teardown_request 
+def cleanup(f):
+    end = timer()
+    try:
+        if g.start:
+            duration = (end - g.start)*1000
+            app.logger.info("Request to %s took %s ms", request.path, duration)
+        else:
+            app.logger.warning("g.start not set for some reason, url: %s", request.path)
+    except Exception as r:
+        app.logger.error("Error in reques teardown", exc_info = True)
 
 @app.route("/update", methods=["UPDATE"])
 def update_element():
@@ -147,7 +159,13 @@ def update_element():
         if target=="feedback":
             submit_id = int(json_dic["submit_id"])
             points = int(json_dic["points"])
-            visible = bool(json_dic["visible"])
+            visible = json_dic["visible"]
+            if visible =="false":
+                visible=False
+            elif visible == "true":
+                visible=True
+            else:
+                visible = bool(visible)
             db.grade_submit(current_user.get_id(), submit_id,points, visible=visible)
 
             return Response("", 200)
@@ -156,6 +174,7 @@ def update_element():
     except (KeyError, ValueError) as r:
         app.logger.error(r, exc_info=True)
         return Response("", 400)
+
 @app.route("/get/<int:file_id>")
 @login_required
 def get_file(file_id):

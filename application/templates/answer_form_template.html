@@ -44,11 +44,12 @@
 
         <td>
           {{ form.files }}
+          {{ form.csrf_token }}
         </td>
       </tr>
 
 
-      {{ form.csrf_token }}
+      
     
     <tr>
         <td>
@@ -89,3 +90,4 @@
     </tr>
     {% endif %}
     
+</table>
