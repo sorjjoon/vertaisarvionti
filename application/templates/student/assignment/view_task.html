@@ -68,6 +68,13 @@
         Et voi enää muokata palautustasi
     </p>
     {% endif %}
+    {% if assignment.submits %}
+
+<div class="container mt-1">
+    <p>Pisteesi: {{points}}/{{task.points}}</p>
+{% include 'comment_template.html' %}
+</div>
+{% endif %}
 </div>
 {% set answer=task.answer %}
 {% if answer %}

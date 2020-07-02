@@ -11,7 +11,7 @@ class CommentJsonEncoder(json.JSONEncoder):
 
 
 class Comment():
-    def __init__(self, id:int, owner_id:int, text:str, visible:bool,  date:datetime.datetime, modified:datetime.datetime, time_zone = "UTC", owner_str:str=""):
+    def __init__(self, id:int, owner_id:int, text:str, visible:bool,  date:datetime.datetime, modified:datetime.datetime, time_zone = "UTC", owner_str:str="", date_str = None):
         self.id = int(id)
         self.owner_id=int(owner_id)
         self.text = text
@@ -23,7 +23,11 @@ class Comment():
         self.modified = None
         if modified is not None:
             self.modified = pytz.timezone(time_zone).localize(date)
-
+        if not date_str:
+            
+            self.date_str=str(self.date.strftime("%d.%m, klo %H:%M"))
+            if modified:
+                self.date_str+="(muokattu "+self.modified.strftime("%d.%m, klo %H:%M")+")"
 
     def __repr__(self):
         return "id: "+str(self.id)+" owner_id "+str(self.owner_id)+" text "+self.text+" visible: "+str(self.visible)
@@ -35,3 +39,5 @@ class Comment():
             self.date = self.date.astimezone(pytz.timezone(time_zone))
         if self.modified:
             self.modified = self.modified.astimezone(pytz.timezone(time_zone))
+    
+    

@@ -268,7 +268,7 @@ def insert_files(self, user_id:int,files:list, submit_id:int=None, assignment_id
         elif assignment_id is not None:
             self.logger.info("inserting for assignment "+str(assignment_id))
             for dic in insert_dics:
-                dic[self.file.c.assignment_id]
+                dic[self.file.c.assignment_id]=assignment_id
         else:
             self.logger.error("Null ids for insert")
             raise ValueError("File null id insert")

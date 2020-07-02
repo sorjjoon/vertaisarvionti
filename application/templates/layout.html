@@ -1,22 +1,23 @@
-
-
 <!DOCTYPE html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <link href="https://developer.snapappointments.com/bootstrap-select/A.ajax,,_libs,,_highlight.js,,_9.15.6,,_css,,_github.min.css+css,,_base.css+css,,_custom.css+dist,,_css,,_bootstrap-select.min.css,Mcc.MsOMCVf2_h.css.pagespeed.cf.zpjYFY_U7q.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link
+    href="https://developer.snapappointments.com/bootstrap-select/A.ajax,,_libs,,_highlight.js,,_9.15.6,,_css,,_github.min.css+css,,_base.css+css,,_custom.css+dist,,_css,,_bootstrap-select.min.css,Mcc.MsOMCVf2_h.css.pagespeed.cf.zpjYFY_U7q.css"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
   <link rel="stylesheet" href="{{ url_for('static', filename='header.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='file-icon-classic.css') }}">
-  <script src="{{ url_for('static', filename='scripts.js') }}"></script> 
+
   <title>Vertaisarvionti</title>
-  </head>
+</head>
 
 
 <body>
   <nav class="navbar navbar-expand navbar-light mt-0" style="background-color: #5e5a59;">
-    
+
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav">
@@ -35,25 +36,25 @@
 
     </div>
     <!-- <div class="navbar-collapse collapse w-100 order-3 dual-collapse2"> -->
-      <div class="collapse navbar-collapse" id="navbarNav">
+    <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ml-auto">
         {% if current_user.is_authenticated %}
         <li class="nav-item">
           <a class="nav-link" id="name">Hei {{current_user.first_name}}!</a>
         </li>
 
-        
+
 
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('logout_auth') }}">Kirjaudu Ulos</a>
         </li>
-        
+
         {% if current_user.role == 'TEACHER' %}
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('new_course') }}">Uusi Kurssi</a>
         </li>
         {% endif %}
-        
+
         {% else %}
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('login_auth') }}">Kirjaudu Sisään</a>
@@ -61,7 +62,7 @@
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('register') }}">Rekisteröidy</a>
         </li>
-      
+
         {% endif %}
       </ul>
     </div>
@@ -69,19 +70,35 @@
 
 
 
-  <!-- <main role="main" class="container-fluid ml-3" style="overflow-x: hidden;"></main> -->
-    {% block body %}
-    
-      stuff
-    
-    {% endblock %}
-  <!-- </main> -->
+
+  {% block body %}
+
+  stuff
+
+  {% endblock %}
+ 
   {% set previous =  previous_url(request.url) %}
   {% if previous %}
   <form method="GET" action={{previous}}>
     <input class="mt-2" type="submit" value="Takaisin">
   </form>
   {% endif %}
-  </body>
+
+ 
+</body>
+<script src="{{ url_for('static', filename='scripts.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+  
+  document.getElementById("send_comment").addEventListener("click", sendComment)
+  $( document ).ready(function() {
+    console.log( "ready!" );
+    if (document.getElementById("old_comments") ){
+      console.log("found comment field")
+        getComments("{{comment_target}}")
+    }
+});
+  
+</script>
 
 </html>

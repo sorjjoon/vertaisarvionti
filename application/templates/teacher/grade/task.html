@@ -1,16 +1,16 @@
 {% extends "layout.html" %}
 {% block body %}
-<a href={{next_url}}>Seuraava</a>
-<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
 
-  <table class="table">
+<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+  <p class="ml-2"><a href={{next_url}} >Seuraava</a></p>
+  <table class="table mt-3">
     <tbody>
 
       <tr>
         <th>{{this_student}}
         </th>
         <td>
-          <p>{% if submit %} Palautettu {{submit.date.strftime("%d.%m.%y, %H:%M")}},
+          <p>{% if submit %} Palautettu {{submit.date.strftime("%d.%m.%y, %H:%M")}}
             (<small>{{get_deadline_string(assignment.deadline, now=submit.date, before="ennen aikarajaa", after="aikarajan jälkeen")}}</small>)
             {% else %}Ei palautettu {% endif %}
           </p>
@@ -22,9 +22,9 @@
         <td>
           <table>
             <tr>
-            {% for file in submit.files %}
-            
-           
+              {% for file in submit.files %}
+
+
               <td style="border-top: 0px">
                 <a class="ml-2 smaller_font pb-0 pt-0" href={{url_for('get_file', file_id=file.id) }}><span
                     class="fiv-cla fiv-icon-{{get_file_extension(file.name)}} fiv-size-md"></span> {{file.name}}</a>
@@ -34,8 +34,8 @@
 
             </tr>
             <tr>
-            {% endif %}
-            {% endfor %}
+              {% endif %}
+              {% endfor %}
 
           </table>
         </td>
@@ -52,68 +52,35 @@
     </tbody>
   </table>
 </div>
+{% if submit %}
 <div class="container mt-1">
+{% include 'comment_template.html' %}
+</div>
+{% endif %}
+<div class="container mt-4">
   <table>
     <tr>
       <td>
-        <input type="text" id="grade_points" value="{{feedback.points}}" name="points" onchange="setTimeout(validate_and_send, 2500)">
+        <input type="text" id="grade_points" value="{{feedback.points}}" name="points"
+          onchange="setTimeout(validateAndSendPoints, 500)">
         <span>/{{task.points}}</span>
       </td>
       <td>
-        <label class="ml-5 mr-2 slightly_smaller_font"  for="grade_visible">Näkyy opiskelijalle: </label>
-        <input type="checkbox" id="grade_visible"  name="points" onchange="setTimeout(validate_and_send, 2500)" {% if feedback.visible %} checked {% endif %}>
+        <label class="ml-5 mr-2 slightly_smaller_font" for="grade_visible">Näkyy opiskelijalle: </label>
+        <input type="checkbox" id="grade_visible" name="points" onchange="setTimeout(validateAndSendPoints, 500)"
+          {% if feedback.visible %} checked {% endif %}>
       </td>
     </tr>
     <tr>
       <td>
-        <p style="height: 18px;"><small id="point_status"> </small></p>
+        <p style="height: 18px;"><small id="point_status"> </small> </p>
+
       </td>
+
     </tr>
   </table>
   <input type="hidden" id="max_points" value="{{task.points}}">
+  <input type="hidden" value="{{submit.id}}" id ="submit_id">
 </div>
-<script>
-  function validate_and_send() {
-    var current = Number(document.getElementById("grade_points").value)
-    var max = Number(document.getElementById("max_points").value)
-    var text = document.getElementById("point_status")
-    var visible = document.getElementById("grade_visible").checked
-
-    if (isNaN(max)) {
-      return
-    }
-
-    if (isNaN(current)) {
-      text.innerHTML = "pisteiden täytyy olla numero"
-      return
-    }
-
-    if (max < current) {
-      text.innerHTML = "pisteet eivät voi olla maksimipisteitä suurempia"
-      return
-    }
-
-    text.innerHTML = "päivitetään... (uudet pisteet " + current + ")"
-    var data = {
-      target: 'feedback',
-      submit_id: '{{submit.id}}',
-      update: ["points"],
-      points: current,
-      visible: visible
-    };
-
-    xhr = sendRequest('{{url_for("update_element")}}', "UPDATE", JSON.stringify(data), true)
-    xhr.onload = function () {
-
-      if (xhr.status == 200) {
-        text.innerHTML = "tallennettu!"
-      } else {
-        text.innerHTML = "tallennus ei onnistunut"
-      }
-
-    }
-
-  }
-</script>
 
 {% endblock %}

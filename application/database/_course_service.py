@@ -195,7 +195,7 @@ def enlist_student(self, code:str , student_id:int):
         ValueError: [in case of invalid code]
         IntegrityError: [in case of duplicate sign up]
     """    
-    sql = select([self.course.c.id]).where(self.course.c.code == code)
+    sql = select([self.course.c.id]).where(self.course.c.code == code.upper())
     with self.engine.connect() as conn:
         self.logger.info("Attempting enlisting student %s with code", student_id, code)
         rs = conn.execute(sql)

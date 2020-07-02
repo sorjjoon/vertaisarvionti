@@ -4,7 +4,7 @@ import os
 import sys
 from sqlalchemy import (Boolean, Column, Date, DateTime, ForeignKey, Index,
                         Integer, LargeBinary, MetaData, String, Table,
-                        UniqueConstraint, engine)
+                        UniqueConstraint, engine, Text)
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, select, update)
@@ -180,7 +180,7 @@ class data():
         self.comment = Table("comment", metadata,
         
         Column("id", Integer, primary_key=True),
-        Column("text", String(500)),
+        Column("text", Text),
         Column("modified", DateTime),
         Column("user_id", Integer, ForeignKey(
                                 "account.id"), nullable=False),
@@ -279,10 +279,10 @@ class data():
     from ._course_service import insert_course, select_courses_teacher, select_courses_student, enlist_student, select_students, select_course_details, set_assignments
     from ._assignment_service import insert_assignment, insert_task, select_assignment, set_submits
     from ._file_service import select_file_details, get_file, update_file, insert_file_log, insert_files, check_user_view_rights, check_user_delete_rights
-    from ._submit_service import update_submit, select_submits
+    from ._submit_service import update_submit, select_submits, get_simple_submit
     from ._teacher_stats import count_students
     from ._task_service import set_task_answer, update_answer
     from ._overview_service import get_all_submits, get_course_task_stats, get_first_downloads
     from ._view_rights import check_access_rights
     from ._feedback_service import update_feedback, grade_submit, delete_feedback, insert_feedback, select_feedback
-    from ._comment_service import insert_comment,select_comments, update_comment
+    from ._comment_service import insert_comment,select_comments, update_comment, insert_comment_dict

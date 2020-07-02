@@ -65,7 +65,7 @@ def create_app(config):
         logging.getLogger("sqlalchemy").setLevel(logging.DEBUG)
         logging.getLogger("sqlalchemy").propagate = False
 
-        sql_handler = logging.FileHandler("sql_log.log","w")
+        sql_handler = logging.FileHandler("sql_log.log","a")
         formatter = logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s - %(process)d: %(message)s")
         sql_handler.setFormatter(formatter)
         sql_handler.setLevel(logging.INFO)

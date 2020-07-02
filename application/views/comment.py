@@ -12,54 +12,80 @@ from application import db
 import io
 import json
 
-@app.route("/comment/new", methods=["POST"])
+
+@app.route("/comment", methods=["POST", "PATCH", "GET"])
 @login_required
 def new_comment():
-    text = request.form.get("comment","")
-    target_string = request.form.get("target_string")
-    if not target_string:
-        return redirect(url_for("index"))
-    comment_target = target_string[0]
-    target_id = int(target_string[1:])
-    if comment_target=="s":
-        db.insert_comment(current_user.get_id(), text, submit_id=target_id)
-    elif comment_target=="t":
-        db.insert_comment(current_user.get_id(), text, task_id=target_id)
-    elif comment_target =="a":
-        db.insert_comment(current_user.get_id(), text, assignment_id=target_id)
-    elif comment_target =="n":
-        db.insert_comment(current_user.get_id(), text, answer_id=target_id)
+    try:
+        if request.method == "POST" or request.method == "PATCH":
+            json_dic = json.loads(request.data)
+            comment_target = json_dic.pop("target", None)
+    except Exception:
+        app.logger.error("Error parsing user json ", exc_info=True)
+        app.logger.error("json: \n, %s", request.data)
+        return Response("", 400)
 
-    return redirect(request.form.get("origin", url_for("index")))
+    if request.method == "POST":
+        id = int(comment_target[comment_target.index(":")+1])
+        if "ts" in comment_target:
+            submit = db.get_simple_submit(current_user.get_id(),id)
+            if submit:
+                json_dic["submit_id"] = int(submit.id)
+            else:
+                return Response("", 409)
+        elif "s" in comment_target:
+            json_dic["submit_id"] = id
 
+        else:
+            app.logger.error(
+                "Comment_target %s not found, or invalid format", comment_target)
+            return Response("", 400)
 
-@app.route("/comment/get", methods=["GET"])
-@login_required
-def get_comments():
-    comments = db.select_comments(current_user.get_id(),task_id=2)
-    buffer = io.BytesIO()
+        json_dic["user_id"] = current_user.get_id()
+
+        db.insert_comment_dict(json_dic)
+        return Response("", 200)
+
+    elif request.method == "PATCH":
+        try:
+            db.update_comment(json_dic[comment_id], current_user.get_id(
+            ), json_dic.get("text"), json_dic.get("visible"))
+            return Response("", 200)
+        except Exception:
+            app.logger.error(
+                "Error updating comment based on json", exc_info=True)
+            return Response("", 400)
+
+    elif request.method == "GET":
+        comment_target = request.headers.get("Comment-target")
+        id = int(comment_target[comment_target.index(":")+1])
+        if "ts" in comment_target:
+            submit = db.get_simple_submit(
+                current_user.get_id(), id)
+            submit_id = int(submit.id)
+        elif "s" in comment_target:
+            submit_id = id
+        else:
+            app.logger.error(
+                "Comment_target %s not found, or invalid format", comment_target)
+            return Response("", 400)
+
+        comments = db.select_comments(
+            current_user.get_id(), submit_id=submit_id)
+        dict_list = [{"id": c.id, "owner_str":c.owner_str, "date_str":c.date_str, "text":c.text} for c in comments]
+        data = json.dumps(dict_list)
+        response = app.response_class(
+            response=data,
+            status=200,
+            mimetype='application/json'
+        )
+        return response
 
 
 @app.route("/update/comment")
 def update_comment():
     text = request.form.get("comment")
     id = request.form.get("id")
-    db.update_comment(id, current_user.get_id(),text=text)
+    db.update_comment(id, current_user.get_id(), text=text)
 
     return redirect(request.form.get("origin", url_for("index")))
-
-@app.route("/comment", methods = ["GET", "POST"])
-@login_required
-def comment():
-    if request.method == "GET":
-        return redirect(url_for("index"))
-    
-    text = request.form.get("text")
-    next_url = request.form.get("next")
-    try:
-        c_id = request.form.get("id")
-    except:
-        return redirect(url_for("index"))
-    visible = bool(request.form.get("vis"))
-    if request.form.get("u"):
-        db.update_comment(c_id, current_user.get_id(),text=text, visible=visible)

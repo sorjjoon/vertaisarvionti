@@ -30,7 +30,7 @@
     action={{url_for("task_overview", course_id=course_id, task_id=task.id, assignment_id=assignment.id)}}
     enctype="multipart/form-data">
     {% include "answer_form_template.html" %}
-
+<input type="submit" value="Päivitä">
 
   </form>
 </div>
@@ -47,7 +47,7 @@
 
         <th scope="col-3">Opiskelija voi nähdä pisteensä </th>
 
-        <th scope="col-1"><button>Päivitä </button> </th>
+         <th scope="col-1"> </th> 
       </tr>
     </thead>
     <tbody>
@@ -66,7 +66,7 @@
 
           <input type="checkbox" id="grade_visible" name="{{'vis' ~ submits.get(s.id).id }}" class="larger_checkbox"
             {% if submits.get(s.id)[0].feedback.visible %} checked {% endif %}>
-
+         
         </td>
         {% else %}
         <td class="col-3">Ei palautettu</td>

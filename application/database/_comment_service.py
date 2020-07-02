@@ -1,5 +1,5 @@
 from sqlalchemy.sql import Select, between, delete, desc, distinct, insert, join, select, update, func
-from sqlalchemy import nullslast
+from sqlalchemy import func, desc
 from sqlalchemy.exc import IntegrityError
 
 
@@ -7,10 +7,8 @@ from application.auth.account import account
 from application.domain.comment import Comment
 from datetime import datetime
 
-from typing import TYPE_CHECKING
+from typing import List
 
-if TYPE_CHECKING:
-    from .data import data
 
 def insert_comment(self, user_id:int, text:str, submit_id:int=None, task_id:int=None, assignment_id:int=None, answer_id:int=None, visible:bool=True) -> int:
     """[Insert given comment]
@@ -55,6 +53,13 @@ def insert_comment(self, user_id:int, text:str, submit_id:int=None, task_id:int=
         return id
 
 
+def insert_comment_dict(self, comment_dict):
+    sql = self.comment.insert().values(comment_dict)
+    with self.engine.connect() as conn:
+        conn.execute(sql)
+
+
+
 def delete_comment(self, comment_id:int, user_id:int):
     sql = self.comment.delete().where(id=comment_id, user_id=user_id)
     self.logger.info("Deleting comment %s for user %s ", comment_id, user_id)
@@ -64,8 +69,8 @@ def delete_comment(self, comment_id:int, user_id:int):
         if rs.rowcount != 1:
             self.logger.warning("Incorrect number of rows deleted")
 
-def select_comments(self, user_id:int, submit_id:int=None, task_id:int=None, assignment_id:int=None, answer_id:int=None) -> list:
-    """Select comments matching param
+def select_comments(self, user_id:int, submit_id:int=None, task_id:int=None, assignment_id:int=None, answer_id:int=None) -> List[Comment]:
+    """Select comments matching param. Makes sure user has rights to view the comment, by checking that they are the owner, or the comment is visible
 
     Args:
         user_id (int): [description]
@@ -81,19 +86,19 @@ def select_comments(self, user_id:int, submit_id:int=None, task_id:int=None, ass
         [list]: [list of comments]
     """
     
-    j = self.comment.join(self.account)
-    sql = select([self.comment, self.account.c.last_name, self.account.c.first_name]).where(self.comment.c.user_id==user_id | self.comment.c.visible == True).order_by(self.comment.c.timestamp)
+    j = self.comment.join(self.account).join(self.role)
+    sql = select([self.comment, self.account.c.last_name, self.account.c.first_name, self.role.c.name]).where((self.comment.c.user_id==user_id) | (self.comment.c.visible == True)).select_from(j).order_by(desc(func.coalesce(self.comment.c.modified, self.comment.c.timestamp)))
     if submit_id is not None:
-        sql=sql.where(submit_id=submit_id)
+        sql=sql.where(self.comment.c.submit_id==submit_id)
         self.logger.info("Selecting comments for user %s from submit %s",user_id, submit_id)
     elif answer_id is not None:
-        sql=sql.where(answer_id=answer_id)
+        sql=sql.where(self.comment.c.answer_id==answer_id)
         self.logger.info("Selecting comments for user %s from answer %s",user_id, answer_id)
     elif task_id is not None:
-        sql=sql.where(task_id=task_id)
+        sql=sql.where(self.comment.c.task_id==task_id)
         self.logger.info("Selecting comments for user %s from task %s",user_id, task_id)
     elif assignment_id is not None:
-        sql = sql.where(assignment_id=assignment_id)
+        sql = sql.where(self.comment.c.assignment_id==assignment_id)
         self.logger.info("Selecting comments for user %s from assignment %s",user_id, assignment_id)
     else:
         raise ValueError("all arguments null")
@@ -103,8 +108,12 @@ def select_comments(self, user_id:int, submit_id:int=None, task_id:int=None, ass
         rs=conn.execute(sql)
         comments=[]
         for row in rs:
-            c = Comment(row[self.comment.c.id], row[self.comment.c.user_id], row[self.comment.c.text], row[self.comment.c.visible], row[self.comment.c.timestamp], row[self.comment.c.modified], owner_str=row[self.account.c.last_name]+", "+row[self.account.c.first_name])
-            comments.append()
+            owner_str=row[self.account.c.last_name]+", "+row[self.account.c.first_name]
+            if row[self.role.c.name] == "TEACHER":
+                owner_str+="  (opettaja)"
+            c = Comment(row[self.comment.c.id], row[self.comment.c.user_id], row[self.comment.c.text], row[self.comment.c.visible], row[self.comment.c.timestamp], row[self.comment.c.modified], owner_str=owner_str)
+            
+            comments.append(c)
         
         return comments
 

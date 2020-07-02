@@ -15,5 +15,6 @@ procfile
 /cov
 *.log
 *.db
+vertais_data.db
 # all mains used for testing are called main.py (actual app started with run.py)
 main.py

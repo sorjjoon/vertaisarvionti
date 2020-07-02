@@ -1,25 +1,25 @@
-{% extends "layout.html" %} 
-{% block body %}
-<div class="container add_border">
+<div class="container comment_container  add_border">
+    <div class="row">
+        <textarea rows="3" id="comment_text" placeholder="Lisää kommentti..."></textarea>
+    </div>
+    <div class="row mt-1">
+        <div class="col">
+            <div>
+                <input class="btn btn-light pull-left" id="send_comment" type="submit" value="Lähetä">
+                <input id="comment_target" type="hidden" value="{{ comment_target }}">
 
-    <button class='btn pull-right comment_button'> 
-        <span>&#9881;</span>
-          </button> 
-        {% if comment is defined %}
-    <form method="POST" action="{{url_for('update_comment', comment_id=comment.id)}}">
-        <textarea rows="4" cols="50" name="comment" >
-            Enter text here...</textarea>
-        <!-- <input type="text" class="comment_field" id="{{'comment_text' ~ comment.id}}" name="comment_text" value="{{comment.txt}}"> -->
-        <input type="submit" id="{{'comment_submit' ~ comment.id}}" value="Kommentoi">
-    
-    {% else %}
-    <form method="POST" action="{{url_for('new_comment')}}">
-        <textarea rows="4" cols="50" name="comment" >
-            Enter text here...</textarea>
-        <input type="submit" id="comment_submit_new" value="Kommentoi">
-        <input type="hidden" name="target_string" value="{{target_string}}">
-    {% endif %}
-        <input type="hidden" name="origin" value={{request.url}}>
-</form>
+
+                <p id="comment_submit_status" class="ml-4 smaller_font"> <small></small></p>
+            </div>
+        </div>
+
+    </div>
 </div>
-{% endblock %}
+<table class="smaller_font comment_table table-striped" style="width: 100%;">
+    <caption>Kommentit</caption>
+    <tbody id="old_comments">
+    
+    </tbody>
+</table>
+
+

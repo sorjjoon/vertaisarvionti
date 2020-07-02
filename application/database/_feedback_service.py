@@ -5,7 +5,7 @@ from string import ascii_uppercase
 from random import choice
 from application.domain.course import Course
 from application.auth.account import account
-from application.domain.assignment import Assignment, Task
+from application.domain.assignment import Assignment, Task, Feedback
 from datetime import datetime
 
 
@@ -17,7 +17,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 from application.auth.account import account
-from application.domain.assignment import Comment, Feedback
+
 from datetime import datetime
 
 from typing import TYPE_CHECKING

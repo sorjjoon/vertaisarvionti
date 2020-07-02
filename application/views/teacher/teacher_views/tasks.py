@@ -64,7 +64,7 @@ def new_assignment(course_id):
     for file in files:
         if not check_file(file):  
             app.logger.info("File max size reached")  
-            return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Ainakin yhden lataamasi tiedoston koko oli liian suuri (max 100 Mb)")
+            return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Ainakin yhden lataamasi tiedoston koko oli liian suuri (max 50 Mb)")
 
     deadline = None
     if form.deadline.data is not None:
@@ -82,19 +82,19 @@ def new_assignment(course_id):
         for file in task_files:
             if not check_file(file):  
                 app.logger.info("File max size reached")    
-                return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Ainakin yhden lataamasi tiedoston koko oli liian suuri (max 100 Mb)")
+                return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Ainakin yhden lataamasi tiedoston koko oli liian suuri (max 50 Mb)")
         i+=1    
     app.logger.info("attempting insert")
     assig_id = db.insert_assignment(current_user.get_id(), course_id,form.name.data ,deadline , reveal , files)
     app.logger.info("insert successfull")
-    i =1
+    i =0
     for task in form.tasks.data:
         
         files = request.files.getlist("tasks-"+str(i)+"-task_files")
         
         
         app.logger.info("inserting tasks")
-        db.insert_task(current_user.get_id(),i, assig_id, task.get("brief"), task.get("points"), files)
+        db.insert_task(current_user.get_id(),i+1, assig_id, task.get("brief"), task.get("points"), files)
         i+=1
     app.logger.info("Everthing inserted! Assignment inserted")
     return redirect(url_for("index"))
@@ -104,7 +104,7 @@ def check_file(file):
     file.seek(0, os.SEEK_END)        
     size = file.tell()
     file.seek(0)
-    if size > 100 * 1024 * 1024:
+    if size > 50 * 1024 * 1024:
         return False
 
     return True

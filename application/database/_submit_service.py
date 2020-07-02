@@ -45,6 +45,17 @@ def select_submits(self, user_ids:list=None, task_ids:list = None, set_feedback=
                 task_dict[task_id].feedback = Feedback(id=row[self.feedback.c.id], files=[], date=row[self.feedback.c.timestamp], modified=row[self.feedback.c.modified], owner_id=row[self.feedback.c.owner_id], description=row[self.feedback.c.description], visible=row[self.feedback.c.visible], submit_id=row[self.feedback.c.submit_id])
     
     return res
+def get_simple_submit(self, user_id, task_id):
+    j = self.submit.outerjoin(self.file)
+    sql = select([self.submit, self.file.c.id, self.file.c.name, self.file.c.upload_date]).select_from(j).where((self.submit.c.owner_id == user_id) & (self.submit.c.task_id == task_id))
+    with self.engine.connect() as conn:
+        rs = conn.execute(sql)
+        submit = None
+        for row in rs:
+            if not submit:
+                submit = Submit(id=row[self.submit.c.id],date=row[self.submit.c.last_update],task_id=row[self.submit.c.task_id], files=[])
+            submit.files.append(File(row[self.file.c.id],row[self.file.c.name], row[self.file.c.upload_date]))
+        return submit
 
 def update_submit(self,user_id:int, task_id:int, assignment_id:int, files:list) -> int:
     """Updates the given students return for the given task

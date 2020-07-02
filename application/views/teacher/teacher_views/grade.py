@@ -58,4 +58,4 @@ def grade_student(course_id, assignment_id, task_id, student_id):
     
     task = assignment.tasks[0]
     feedback = db.select_feedback(current_user.get_id(), submit_id=submit.id)
-    return render_template("/teacher/grade/task.html",feedback=feedback, assignment=assignment,task=task, next_url = next_url , submit=submit, this_student=this_student)
+    return render_template("/teacher/grade/task.html",feedback=feedback, assignment=assignment,task=task, next_url = next_url , submit=submit, this_student=this_student, comment_target="s:"+str(submit.id))

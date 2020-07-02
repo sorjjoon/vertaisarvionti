@@ -100,6 +100,9 @@ def utility_processor():
             return current_url
         except Exception as r:          
             return "/"
+
+        
+            
     return dict(get_file_extension=get_file_extension, previous_url=previous_url, get_deadline_string=get_deadline_string)
 
 
@@ -141,22 +144,25 @@ def validate_user_access():
         
 @app.teardown_request 
 def cleanup(f):
-    end = timer()
+    
     try:
+        end = timer()
         if g.start:
             duration = (end - g.start)*1000
             app.logger.info("Request to %s took %s ms", request.path, duration)
         else:
             app.logger.warning("g.start not set for some reason, url: %s", request.path)
     except Exception as r:
-        app.logger.error("Error in reques teardown", exc_info = True)
+        app.logger.error("Error in request teardown", exc_info = True)
 
-@app.route("/update", methods=["UPDATE"])
+@app.route("/update", methods=["PATCH"])
 def update_element():
     try:
         json_dic = json.loads(request.data)
+        
         target = json_dic.get("target")
         if target=="feedback":
+            app.logger.info("Updating feedback for user: %s with values: %s",current_user.get_id(), json_dic)
             submit_id = int(json_dic["submit_id"])
             points = int(json_dic["points"])
             visible = json_dic["visible"]

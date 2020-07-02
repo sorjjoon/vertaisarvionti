@@ -30,7 +30,13 @@ def view_task(course_id, assignment_id, task_id):
         task.files = db.select_file_details(task_id=task.id)
         db.set_task_answer(task, for_student=True)
         assignment.set_timezones("Europe/Helsinki")
-        return render_template("/student/assignment/view_task.html" ,course_id=course_id, task = task, assignment=assignment, deadline_not_passed=deadline_not_passed)
+        submit = assignment.submits[0]
+        points = ""
+        if submit:
+            feedback = db.select_feedback(current_user.get_id(), submit_id=submit.id)
+            if feedback:
+                points = feedback.points
+        return render_template("/student/assignment/view_task.html" ,course_id=course_id, task = task, assignment=assignment, deadline_not_passed=deadline_not_passed, comment_target="ts:"+str(task_id), points=points)
     else:
         if current_user.role != "USER":
             return redirect(url_for("index"))
