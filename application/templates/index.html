@@ -1,4 +1,42 @@
 {% extends "layout.html" %} 
 {% block body %}
+<div id="main_courses" class="container-fluid">
+    <header class="row">
+        <div id="main_header" class="col-12 pt-1 pb-1">
+            
+            
+        
+        </div>
+        
+    </header>
 
+    <div class="row add_border">
+        <div class="col-12 pt-1 pb-1">
+
+        
+        <h5>
+            Ilmoittautumiset
+        </h5>
+
+    </div>
+    
+        
+        {% if courses %}
+            {% for course in courses %}
+            <div id="course_row" class="row" ">
+            <div class="col-12 pt-1 pb-1">
+                {% include 'course_template.html' %}
+                
+            </div>
+            </div>
+            {% endfor %}
+            
+        {% else %}
+            <h5> Et ole vielä ilmoittautunut kursseille </h5>
+        {% endif %}
+           
+    </div>
+    </div>
+    
+</div>
 {% endblock %}

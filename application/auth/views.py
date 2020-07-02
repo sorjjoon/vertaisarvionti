@@ -22,3 +22,9 @@ def delete_user():
 def logout_auth():
     logout_user()
     return redirect(url_for("index"))
+
+
+@app.route("/auth/")
+@login_required
+def user_details():
+    return redirect(url_for("index"))

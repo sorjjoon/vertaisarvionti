@@ -8,9 +8,20 @@
 
 
 
-body { padding: 0; }
+body { padding: 0; 
+   font-family: Georgia;
+   font-size: 16px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+   font-family: "Verdana", cursive, sans-serif;
+}
 .page-header,
-.page-header h1 {margin-top:0;} 
+.page-header h1 {
+   margin-top:0;
+} 
+
+   
 
 .larger_font {
    font-size: 19px;
@@ -41,12 +52,21 @@ input.larger_checkbox {
 .red_color{
    color: red;
 }
+
+.top_bar {
+   background-color: #5e5a59;
+   
+}
+.nav-item a{
+   color: whitesmoke;
+}
+
 .container-fluid {
-    padding-right:0;
-    padding-left:0;
-    margin-right:auto;
-    margin-left:auto
- }
+   padding-right: 15px;
+   padding-left: 15px;
+   margin-right: auto;
+   margin-left: auto;
+}
  .vertical-center {
    margin: 0;
    position: absolute;
@@ -143,3 +163,39 @@ p {
    width: 90%;
 }
    
+#main_courses {
+   
+   width: 100vw;
+}
+
+#main_header {
+   height: 3rem;
+   display: flex;
+   
+   padding-right: 0;
+   
+}
+.index_button {
+   
+   margin-right: 0;
+}
+.main_dropdwon {
+   background-color: inherit;
+   
+}
+.reset_color {
+   color: initial;
+}
+#main_dropdwon_link{
+   color: white;
+}
+#main_dropdwon_link:hover {
+   color: black;
+}
+#course_link:hover {
+   color: black;
+}
+
+#course_row {
+   margin-left: 0;
+}

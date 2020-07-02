@@ -84,10 +84,10 @@ def create_app(config):
     app.config["PERMANENT_SESSION_LIFETIME"] = 60 *60 * 24 * 7 # 1 week lifetime
     app.config["SESSION_USE_SIGNER"] = True
     app.config["SESSION_SQLALCHEMY"] = sql_alchemy_db
+    
+    
     with app.app_context():
         sess = Session(app)
-    #sess.init_app(app)
-    
         sess.app.session_interface.db.create_all()
     # login
     from flask_login import LoginManager

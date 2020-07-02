@@ -25,10 +25,10 @@ def courses():
     if current_user.role =="TEACHER":
         courses = db.select_courses_teacher(current_user.get_id())
         set_course_counts(courses, db.count_students(current_user.get_id()))
-        return render_template("/teacher/teacher_list.html", courses=courses)
+        return render_template("/index.html", courses=courses)
     else:
         courses = db.select_courses_student(current_user.get_id())
-        return render_template("/student/student_list.html", courses=courses)
+        return render_template("/index.html", courses=courses)
 
 
 
