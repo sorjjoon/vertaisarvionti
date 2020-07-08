@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, validators, ValidationError, BooleanField, FormField, FieldList, TextAreaField
 from wtforms import MultipleFileField, FileField
 from datetime import datetime, timezone
-from flask import current_app as app
+from flask import current_app as app, g
 from wtforms.fields.html5 import DateTimeField
 import pytz
 import datetime
@@ -85,7 +85,7 @@ def new_assignment(course_id):
                 return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Ainakin yhden lataamasi tiedoston koko oli liian suuri (max 50 Mb)")
         i+=1    
     app.logger.info("attempting insert")
-    assig_id = db.insert_assignment(current_user.get_id(), course_id,form.name.data ,deadline , reveal , files)
+    assig_id = db.insert_assignment(g.conn, current_user.get_id(), course_id,form.name.data ,deadline , reveal , files)
     app.logger.info("insert successfull")
     i =0
     for task in form.tasks.data:
@@ -94,7 +94,7 @@ def new_assignment(course_id):
         
         
         app.logger.info("inserting tasks")
-        db.insert_task(current_user.get_id(),i+1, assig_id, task.get("brief"), task.get("points"), files)
+        db.insert_task(g.conn, current_user.get_id(),i+1, assig_id, task.get("brief"), task.get("points"), files)
         i+=1
     app.logger.info("Everthing inserted! Assignment inserted")
     return redirect(url_for("index"))

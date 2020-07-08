@@ -1,6 +1,6 @@
 import datetime
 from typing import List
-
+from sqlalchemy.engine import Connection
 import pytz
 from sqlalchemy import func
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
@@ -11,7 +11,7 @@ from application.domain.assignment import (Answer, Assignment, File, Submit,
                                            Task)
 
 
-def set_task_answer(self, task: Task, for_student=True) -> None:
+def set_task_answer(self, conn: Connection,  task: Task, for_student=True) -> None:
     """Set the given task objects answer to match the database
     For a task with no answer, answer set to null
 
@@ -30,7 +30,7 @@ def set_task_answer(self, task: Task, for_student=True) -> None:
         sql = sql.where(self.answer.c.reveal < func.now())
     #First row gives answer details, other give extra files   
     task.answer = None
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         
         
@@ -57,7 +57,7 @@ def set_task_answer(self, task: Task, for_student=True) -> None:
         
         
 
-def update_answer(self, user_id: int, task_id: int, files: List[File], description: str, files_to_delete=None, reveal: datetime.datetime = pytz.utc.localize(datetime.datetime.utcnow())) -> int:
+def update_answer(self, conn: Connection,  user_id: int, task_id: int, files: List[File], description: str, files_to_delete=None, reveal: datetime.datetime = pytz.utc.localize(datetime.datetime.utcnow())) -> int:
     """Update the database answer to match. If no answer was submitted, a new one is created. If one is found, it is replaced
         Doesn't check if the user has rights to update the answer
     Arguments:
@@ -76,7 +76,7 @@ def update_answer(self, user_id: int, task_id: int, files: List[File], descripti
     self.logger.info("Updating answer for task %s for user %s",task_id,str(user_id))
     
 
-    with self.engine.connect() as conn:
+    with conn.begin():
         if reveal:
             reveal = reveal.astimezone(pytz.utc)
         else:
@@ -115,7 +115,7 @@ def update_answer(self, user_id: int, task_id: int, files: List[File], descripti
             self.logger.info("Update success!")
         
         if new_answer:
-            self.update_file(user_id, files, answer_id=id)
+            self.update_file(conn, user_id, files, answer_id=id)
         else:
-            self.update_file(user_id, files, answer_id=id, files_to_delete=files_to_delete)
+            self.update_file(conn, user_id, files, answer_id=id, files_to_delete=files_to_delete)
     return id

@@ -64,10 +64,14 @@ class Submit():
 
 
 class Assignment():
-    def __init__(self, id, name, reveal:datetime.datetime, deadline:datetime.datetime, tasks, files = [], time_zone = "UTC", submits = []):
-        self.id = int(id)
+    def __init__(self, id, name, reveal:datetime.datetime, deadline:datetime.datetime, tasks, files = [], time_zone = "UTC", submits = [], task_count = None, submit_count = None, course_id=None, course_abbreviation=None):
+        self.id = id
         self.reveal=reveal
         self.name = name
+        self.task_count = task_count
+        self.submit_count = submit_count
+        self.course_id = course_id
+        self.course_abbreviation = course_abbreviation
         if self.reveal is not None:
             self.reveal = pytz.timezone(time_zone).localize(reveal)
         
@@ -79,8 +83,9 @@ class Assignment():
             self.files = files
         else:
             self.files = []
-        
         self.submits = submits
+
+        
     def __str__(self):
         return str(self.__dict__)
 

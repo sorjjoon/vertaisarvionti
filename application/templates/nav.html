@@ -1,0 +1,52 @@
+<nav id="main_nav" class="navbar navbar-expand mt-0 top_bar">
+
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+
+        {% if current_user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('courses') }}" id="course_link">Kurssini</a>
+        </li>
+        {% endif %}
+      </ul>
+
+
+    </div>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ml-auto">
+        <li>
+          {% if current_user.is_authenticated %}
+
+          <div class="dropdown show">
+            <a class="btn btn-link dropdown-toggle main_dropdwon" role="button" id="main_dropdwon_link"
+              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              {{current_user.first_name ~ "  " ~ current_user.last_name}}
+            </a>
+
+            <div class="dropdown-menu" aria-labelledby="main_dropdwon_link">
+
+              {% if current_user.role == 'TEACHER' %}
+              <a href="{{ url_for('new_course') }}" class="dropdown-item">Uusi kurssi</a>
+
+              {% else %}
+              <a href="{{ url_for('enlist_course') }}" class="dropdown-item">Rekisteröidy kurssille</a>
+              {% endif %}
+              <a href="{{ url_for('user_details') }}" class="dropdown-item">Käyttäjätiedot</a>
+              <a href="{{ url_for('logout_auth') }}" class="dropdown-item">Kirjaudu ulos</a>
+
+            </div>
+          </div>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a id="main_dropdwon_link" class="nav-link" href="{{ url_for('login_auth') }}">Kirjaudu Sisään</a>
+        </li>
+        <li class="nav-item">
+          <a id="main_dropdwon_link" class="nav-link" href="{{ url_for('register') }}">Rekisteröidy</a>
+        </li>
+
+        {% endif %}
+      </ul>
+    </div>
+  </nav>

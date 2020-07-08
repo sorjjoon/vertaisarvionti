@@ -3,13 +3,13 @@ from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 from datetime import datetime
 from sqlalchemy import func
-
+from sqlalchemy.engine import Connection
 from werkzeug.utils import secure_filename
 from application.domain.assignment import File
 from typing import List, Tuple
 
 
-def check_access_rights(self, user_id:int, role:str, course_id, assignment_id = None, task_id = None) -> bool:
+def check_access_rights(self, conn: Connection,  user_id:int, role:str, course_id, assignment_id = None, task_id = None) -> bool:
     """Checks if the given user has rights to view selected elements. If multiple are given, checks for all
     currently task_id doesn't check for anything (can be expanded later, if needed)
 
@@ -32,7 +32,7 @@ def check_access_rights(self, user_id:int, role:str, course_id, assignment_id = 
     if course_id==assignment_id==task_id == None:
         self.logger.info("SUCCESS, all params null")
         return True
-    with self.engine.connect() as conn: 
+    with conn.begin(): 
         if course_id is not None:       
             sql = select([self.course.c.id]).where(self.course.c.id == course_id)
             if role=="TEACHER":

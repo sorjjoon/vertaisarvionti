@@ -4,118 +4,85 @@
 <head>
   <meta charset="utf-8">
 
-  <link
-    href="https://developer.snapappointments.com/bootstrap-select/A.ajax,,_libs,,_highlight.js,,_9.15.6,,_css,,_github.min.css+css,,_base.css+css,,_custom.css+dist,,_css,,_bootstrap-select.min.css,Mcc.MsOMCVf2_h.css.pagespeed.cf.zpjYFY_U7q.css"
-    rel="stylesheet">
+  {% block styles %}
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
     integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
   <link rel="stylesheet" href="{{ url_for('static', filename='header.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='file-icon-classic.css') }}">
 
-  <title>Vertaisarvionti</title>
-</head>
-
-
-<body>
-  <nav class="navbar navbar-expand mt-0 top_bar">
-
-
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav">
-
-
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('courses') }}" id="course_link">Kurssini</a>
-        </li>
-
-      </ul>
-
-
-    </div>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ml-auto">
-        {% if current_user.is_authenticated %}
-        <li>
-          <div class="dropdown show">
-            <a class="btn btn-link dropdown-toggle main_dropdwon" role="button" id="main_dropdwon_link"
-              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              {{current_user.first_name ~ "  " ~ current_user.last_name}}
-            </a>
-
-            <div class="dropdown-menu" aria-labelledby="main_dropdwon_link">
-
-              {% if current_user.role == 'TEACHER' %}
-              <a href="{{ url_for('new_course') }}" class="dropdown-item">Uusi kurssi</a>
-
-              {% else %}
-              <a href="{{ url_for('enlist_course') }}" class="dropdown-item">Rekisteröidy kurssille</a>
-              {% endif %}
-              <a href="{{ url_for('user_details') }}" class="dropdown-item">Käyttäjätiedot</a>
-              <a href="{{ url_for('logout_auth') }}" class="dropdown-item">Kirjaudu ulos</a>
-
-            </div>
-          </div>
-
-    </div>
-    </div>
-    </li>
-
-
-    {% else %}
-    <li class="nav-item">
-      <a class="nav-link" href="{{ url_for('login_auth') }}">Kirjaudu Sisään</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="{{ url_for('register') }}">Rekisteröidy</a>
-    </li>
-
-    {% endif %}
-    </ul>
-    </div>
-  </nav>
-
-
-
-  <main id="main" class="container">
-    {% block body %}
-
-    stuff
-
-    {% endblock %}
-
-    {% set previous =  previous_url(request.url) %}
-    {% if previous %}
-    <form method="GET" action={{previous}}>
-      <input class="mt-2" type="submit" value="Takaisin">
-    </form>
-    {% endif %}
-  </main>
-  
-  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
     integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
     crossorigin="anonymous"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
     crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-</body>
-<script src="{{ url_for('static', filename='scripts.js') }}"></script>
+
+  <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+  <title>Vertaisarvionti</title>
+
+  {% endblock %}
+</head>
 
 
-<script>
+<body>
+  {% block navi %}
+  
+  {% include "nav.html" %}
 
-  document.getElementById("send_comment").addEventListener("click", sendComment)
-  $(document).ready(function () {
-    console.log("ready!");
-    if (document.getElementById("old_comments")) {
-      console.log("found comment field")
-      getComments("{{comment_target}}")
+{% endblock %}
+
+  <main id="main" class="main_wrapper">
+    <div id="main_courses" class="container-fluid">
+      <header class="row">
+        <div id="main_header" class="col-12 pt-1 pb-1 mt-1">
+          {% block header %}
+
+
+
+
+
+          {% endblock%}
+        </div>
+
+      </header>
+      {% block body %}
+
+      
+
+      {% endblock %}
+
+      {% block previous_url %}
+
+      {% set previous =  previous_url(request.url) %}
+      {% if previous %}
+      <form method="GET" action={{previous}}>
+        <input class="mt-2" type="submit" value="Takaisin">
+      </form>
+      {% endif %}
+
+      {% endblock %}
+    </div>
+  </main>
+
+  <script>
+
+
+    $(document).ready(function () {
+      console.log("ready!");
+      if (document.getElementById("old_comments")) {
+        console.log("found comment field")
+        getComments("{{comment_target}}")
+      }
+    });
+    if (document.getElementById("send_comment")) {
+      document.getElementById("send_comment").addEventListener("click", sendComment)
     }
-  });
+  </script>
+</body>
 
-</script>
+
+
+
 
 </html>

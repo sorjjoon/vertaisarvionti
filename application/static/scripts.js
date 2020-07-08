@@ -78,21 +78,22 @@ function sendComment(event) {
   if (id === 'send_comment') {
     var status = document.getElementById('comment_submit_status')
     status.innerHTML = "tallennetaan..."
-    var txt = document.getElementById('comment_text').value
+    var txt = document.getElementById('comment_text')
     var target = document.getElementById("comment_target").value
     var data = {
-      text: txt,
+      text: txt.value,
       target: target,
       visible: true
  
     }
-    console.log(JSON.stringify(data))
+    
     xhr = sendRequest("/comment", "POST", true)
     
     xhr.onload = function () {
 
       if (xhr.status == 200) {
         status.innerHTML = "tallennettu!"
+        txt.value = ""
         getComments(target)
       } else {
         status.innerHTML = "tallennus ei onnistunut"
@@ -113,10 +114,11 @@ function getComments(target_id) {
   xhr.onload = function () {
     if (xhr.status == 200) {
       var comments = JSON.parse(this.responseText);
-      $( "#old_comments" ).empty()
+      $("#old_comments").empty()
       comments.forEach(element => {
         parseAddComment(element)
       });
+
     } else {
       console.log("Kommenttien haku ei onnistunut")
     }

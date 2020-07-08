@@ -4,11 +4,11 @@ from sqlalchemy import func
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 from werkzeug.utils import secure_filename
-
+from sqlalchemy.engine import Connection
 from application.domain.assignment import Assignment, File, Submit, Task
 
 
-def count_students(self, teacher_id:int, course_id:int=None) -> tuple:
+def count_students(self, conn: Connection,  teacher_id:int, course_id:int=None) -> tuple:
     """placeholder for student counts, currenylu returns tuples
 
     Arguments:
@@ -26,7 +26,7 @@ def count_students(self, teacher_id:int, course_id:int=None) -> tuple:
     else:    
         j = self.course_student.join(self.course)
         sql = select([self.course_student.c.course_id, func.count( self.course_student.c.student_id)]).select_from(j).group_by(self.course_student.c.course_id).where(self.course.c.teacher_id == teacher_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         
         res = rs.fetchall()

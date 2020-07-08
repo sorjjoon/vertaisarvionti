@@ -3,7 +3,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, validators, ValidationError, BooleanField, FormField, FieldList, TextAreaField
 from datetime import datetime, timezone
-from flask import current_app as app, session, send_file
+from flask import current_app as app, g, session, send_file
 from application import db
 import pytz
 import datetime
@@ -20,7 +20,7 @@ from datetime import date
 @app.route("/view/<course_id>/overview/submits")
 @login_required
 def course_feedbacks(course_id):
-    points, names, task_names = db.get_course_task_stats(course_id)
+    points, names, task_names = db.get_course_task_stats(g.conn, course_id)
     #Doesn't work normally for some reason
     url = url_for('course_csv', course_id=course_id)
     return render_template("/teacher/overview/task_table.html", points=points, names=names, task_names = task_names, csv_url = url)
@@ -28,7 +28,7 @@ def course_feedbacks(course_id):
 @app.route("/view/<course_id>/overview/csv")
 @login_required
 def course_csv(course_id):
-    points, names, task_names = db.get_course_task_stats(course_id)
+    points, names, task_names = db.get_course_task_stats(g.conn, course_id)
     
     with io.StringIO() as temp_buffer:
         writer = DictWriter(temp_buffer,fieldnames=["Opiskelijan nimi"]+task_names)
@@ -40,7 +40,7 @@ def course_csv(course_id):
         mem = io.BytesIO()
         mem.write(temp_buffer.getvalue().encode('utf-8'))
         mem.seek(0)
-    c = db.select_course_details(course_id, current_user.get_id(),is_student=False)
+    c = db.select_course_details(g.conn, course_id, current_user.get_id(),is_student=False)
     d=date.today()
     filename = c.name+"-"+str(d.day)+"-"+str(d.month)+"-"+str(d.year)+".csv"
     return send_file(mem, attachment_filename=filename, as_attachment=True)
@@ -52,13 +52,13 @@ def course_csv(course_id):
 def course_overview(course_id):
     if current_user.role == "USER":
         return redirect(url_for("index"))
-    course = db.select_course_details(course_id, current_user.get_id(), is_student=False)
-    db.set_assignments(course, for_student=False) 
+    course = db.select_course_details(g.conn, course_id, current_user.get_id(), is_student=False)
+    db.set_assignments(g.conn, course, for_student=False) 
     course.set_timezones("Europe/Helsinki")
     course.divide_assignment()
     for a in course.assignments:
         for t in a.tasks:
-            db.set_task_answer(t, for_student=False)
+            db.set_task_answer(g.conn, t, for_student=False)
     return render_template("/teacher/overview/course.html", course = course)  
 
 
@@ -67,9 +67,9 @@ def course_overview(course_id):
 def assignment_overview(course_id, assignment_id):
     if current_user.role == "USER":
         return redirect(url_for("index"))   
-    assign = db.select_assignment(assignment_id)
+    assign = db.select_assignment(g.conn, assignment_id)
     for t in assign.tasks:
-        db.set_task_answer(t, for_student=False)
+        db.set_task_answer(g.conn, t, for_student=False)
     assign.set_timezones("Europe/Helsinki")
     return render_template("/teacher/overview/assignment.html", assignment = assign) 
 
@@ -109,14 +109,14 @@ def task_overview(course_id, assignment_id, task_id):
             if form.description.data:
                 description=form.description.data
 
-            db.update_answer(current_user.get_id(), task_id, request.files.getlist("files"), description, reveal=reveal, files_to_delete=files_to_delete )
+            db.update_answer(g.conn, current_user.get_id(), task_id, request.files.getlist("files"), description, reveal=reveal, files_to_delete=files_to_delete )
             app.logger.info("update success, redirecting")
             form = None
             return redirect(url_for("task_overview", course_id=course_id, assignment_id=assignment_id, task_id=task_id))
             
 
     app.logger.info("viewing task overview")
-    assignment = db.select_assignment(assignment_id, task_id=task_id)
+    assignment = db.select_assignment(g.conn, assignment_id, task_id=task_id)
     if not assignment:
         return redirect(url_for("index"))
     if assignment.deadline is None:
@@ -129,16 +129,16 @@ def task_overview(course_id, assignment_id, task_id):
     except:
         return redirect(url_for("index"))
     
-    db.set_submits(assignment,current_user.get_id(), task_id=task.id)
+    db.set_submits(g.conn, assignment,current_user.get_id(), task_id=task.id)
     
-    task.files = db.select_file_details(task_id=task_id)
-    db.set_task_answer(task, for_student=False)
+    task.files = db.select_file_details(g.conn, task_id=task_id)
+    db.set_task_answer(g.conn, task, for_student=False)
     assignment.set_timezones("Europe/Helsinki")
     
     if form is None:
         form = AnswerForm()
-    submits = db.get_all_submits(assignment_id, task_id=task.id, convert_to_timezone = "Europe/Helsinki", join_feedback=True)
-    all_students = db.select_students(course_id, current_user.get_id())
+    submits = db.get_all_submits(g.conn, assignment_id, task_id=task.id, convert_to_timezone = "Europe/Helsinki", join_feedback=True)
+    all_students = db.select_students(g.conn, course_id, current_user.get_id())
     student_ids_with_submits = [s.id for s in all_students if submits.get(s.id)]
     student_ids_with_submits.append("id"+str(task_id))
     

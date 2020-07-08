@@ -1,42 +1,74 @@
-{% extends "layout.html" %} 
+{% extends "layout.html" %}
+{% block styles %}
+{{super()}}
+
+{% endblock %}
+{% block navi %}
+{{super()}}
+{% endblock %}
+
+{% block header %}
+
+{% endblock %}
+
 {% block body %}
-<div id="main_courses" class="container-fluid">
-    <header class="row">
-        <div id="main_header" class="col-12 pt-1 pb-1">
-            
-            
-        
+<div class="row mr-1 ml-1">
+    <div class=" col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-9">
+        <div id="signup_container" class="add_border ">
+            <div class="row ">
+                <div class="col-12  pt-1 pb-1">
+                    <h5>
+                        Ilmoittautumiset
+                    </h5>
+                    <hr>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 pt-1 pb-1">
+                    <div class="d-flex flex-row flex-wrap justify-content-start">
+                        {% if courses %}
+                        {% for course in courses %}
+                        <a id="course_container" href="{{url_for('view_course', course_id=course.id)}}" class="d-flex flex-column add_border">
+                            <img src="{{ url_for('static', filename='images/1.jpg') }}">
+                            <h5 class="text">{{course.name}}</h5>
+                        </a>
+                        {% endfor %}
+                        {% else %}
+
+                        <h5> Et ole vielä ilmoittautunut kursseille </h5>
+
+
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
-        
-    </header>
-
-    <div class="row add_border">
-        <div class="col-12 pt-1 pb-1">
-
-        
-        <h5>
-            Ilmoittautumiset
-        </h5>
-
     </div>
-    
-        
-        {% if courses %}
-            {% for course in courses %}
-            <div id="course_row" class="row" ">
-            <div class="col-12 pt-1 pb-1">
-                {% include 'course_template.html' %}
-                
-            </div>
-            </div>
-            {% endfor %}
-            
-        {% else %}
-            <h5> Et ole vielä ilmoittautunut kursseille </h5>
-        {% endif %}
-           
+
+    <div class="col-3 d-none d-md-block ">
+        <div id="timeline_container" class="container add_border">
+            <h6>
+                Palautukset tällä viikolla
+            </h6>
+            <ul>
+                {% for assignment in incoming_assignments %}
+                <li>
+                    <a
+                        href="{{url_for("view_assig", assignment_id=assignment.id, course_id=assignment.course_id)}}">{{assignment.name}}</a>
+
+                    <span class="slightly_smaller_font">Palautettu:
+                        ({{assignment.submit_count ~ "/" ~ assignment.task_count}}) </span>
+                    <span class="smaller_font mt-0"> {{get_deadline_string(assignment.deadline)}} </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
-    </div>
-    
 </div>
+{% endblock %}
+
+
+{% block previous_url %}
+
+
 {% endblock %}

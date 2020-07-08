@@ -2,21 +2,21 @@
 from sqlalchemy.sql import select, insert, delete, update, join, distinct
 from sqlalchemy.exc import IntegrityError
 from application.auth.account import account
-
+from sqlalchemy.engine import Connection
 #see documentation for queries 
 
 
-def delete_user(self, user_id:int) -> None:
+def delete_user(self, conn: Connection,  user_id:int) -> None:
     """deletes user with the given id. Check db if delete cascades or not (currently doesnt)
 
     Arguments:
         user_id {[int]} -- [id]
     """
     sql = self.account.delete().where(self.account.c.id == user_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         conn.execute(sql) 
 
-def check_user(self, username:str) -> bool:
+def check_user(self, conn: Connection,  username:str) -> bool:
     """check if given username is free
 
     Arguments:
@@ -27,7 +27,7 @@ def check_user(self, username:str) -> bool:
     """
 
     sql = select([self.account.c.id]).where(self.account.c.username==username)
-    with self.engine.connect() as conn:
+    with conn.begin():
         result_set = conn.execute(sql)
         row = result_set.fetchone()
         result_set.close()
@@ -36,7 +36,7 @@ def check_user(self, username:str) -> bool:
         else:
             return False
 
-def update_username(self, new_username:str, user_id:int) -> None:
+def update_username(self, conn: Connection,  new_username:str, user_id:int) -> None:
     """Update the username for given id to match param
 
     Arguments:
@@ -44,7 +44,7 @@ def update_username(self, new_username:str, user_id:int) -> None:
         user_id {int} -- [id]
     """
     sql = self.account.update().values(username=new_username).where(self.account.c.id == user_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         self.logger.info("Updating username for %s", user_id)
         try:
             conn.execute(sql)
@@ -53,7 +53,7 @@ def update_username(self, new_username:str, user_id:int) -> None:
             self.logger.info("Username taken")
             raise r
 
-def get_user_by_id(self, user_id: int) -> account:
+def get_user_by_id(self, conn: Connection,  user_id: int) -> account:
     """Get all details of user matching given id
 
     Arguments:
@@ -65,7 +65,7 @@ def get_user_by_id(self, user_id: int) -> account:
     self.logger.info("fetching user: %s", user_id)
     join_clause = self.account.join(self.role)
     sql = select([self.role.c.name, self.account.c.username, self.account.c.first_name, self.account.c.last_name]).select_from(join_clause).where(self.account.c.id==user_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         result_set = conn.execute(sql)
         row = result_set.fetchone()
         

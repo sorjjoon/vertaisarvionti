@@ -3,13 +3,13 @@ from secrets import token_hex
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import delete, insert, join, select, update
-
+from sqlalchemy.engine import Connection
 from application.auth.account import account
 
 # see documentation for queries / param explanations
 
 
-def get_user(self, username: str, password: str) -> account:
+def get_user(self, conn: Connection,  username: str, password: str) -> account:
     """Get the account object for given username and password (function handles salting)
 
     Arguments:
@@ -20,12 +20,12 @@ def get_user(self, username: str, password: str) -> account:
         account -- [matching user account, None in case username/password invalid]
     """
 
-    hashed = self.hash_password(password, username=username)
+    hashed = self.hash_password(conn, password, username=username)
     j = self.account.join(self.role)
     sql = select([self.account, self.role.c.name]).where(self.account.c.username ==
                                        username).where(self.account.c.password == hashed).select_from(j)
     
-    with self.engine.connect() as conn:
+    with conn.begin():
         result_set = conn.execute(sql)
         row = result_set.fetchone()
         result_set.close()
@@ -37,7 +37,7 @@ def get_user(self, username: str, password: str) -> account:
             return None
 
 
-def get_role_id(self, role:str) -> id:
+def get_role_id(self, conn: Connection,  role:str) -> id:
     """[Return the role_id for given role name. ]
 
     Arguments:
@@ -47,12 +47,12 @@ def get_role_id(self, role:str) -> id:
         id -- [role id, None in case invalid name]
     """
     sql = select([self.role.c.id]).where(self.role.c.name == role)
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         return rs.fetchone()[self.role.c.id]
 
 
-def insert_user(self, username: str, password: str, first_name:str, last_name:str, role:str="USER") -> None:
+def insert_user(self, conn: Connection,  username: str, password: str, first_name:str, last_name:str, role:str="USER") -> None:
     """Insert the given user in the database (also generates new salt) Raises Integrity error in case duplicate username
 
     Arguments:
@@ -68,18 +68,19 @@ def insert_user(self, username: str, password: str, first_name:str, last_name:st
     salt = generate_new_salt()
 
     hashed = hash_password_salt(password, salt)
-    role_id = self.get_role_id(role)
+    role_id = self.get_role_id(conn, role)
     sql = self.account.insert().values(
         username=username, password=hashed, salt=salt, role_id=role_id, first_name=first_name, last_name=last_name)
-    with self.engine.connect() as conn:
+    with conn.begin():
         try:
             conn.execute(sql)
             self.logger.info("Insertion success!")
         except IntegrityError as r:
+            self.logger.info("duplicate username")
             raise r
 
 
-def hash_password(self, password:str, username:str=None, user_id:int=None) -> str:
+def hash_password(self, conn: Connection,  password:str, username:str=None, user_id:int=None) -> str:
     """Get the password for the given password, fetches salt matching username or user_id
         if both are null, returns None
     Arguments:
@@ -101,7 +102,7 @@ def hash_password(self, password:str, username:str=None, user_id:int=None) -> st
         sql = sql.where(self.account.c.id == user_id)
     else:
         return None
-    with self.engine.connect() as conn:
+    with conn.begin():
         result_set = conn.execute(sql)
         row = result_set.fetchone()
         if row is None:
@@ -112,7 +113,7 @@ def hash_password(self, password:str, username:str=None, user_id:int=None) -> st
         return hash_password_salt(password, salt)
 
 
-def update_password(self, user_id: int, new_password: str):
+def update_password(self, conn: Connection,  user_id: int, new_password: str):
     """ update users id to match the given (plain text password) to match users salt hash. Users authroity to do this should be checked outside this function
 
     Arguments:
@@ -120,10 +121,10 @@ def update_password(self, user_id: int, new_password: str):
         new_password {str} -- [new_password]
     """
     self.logger.info("updating password for "+str(user_id))
-    new_hash = self.hash_password(new_password, user_id=user_id)
+    new_hash = self.hash_password(conn, new_password, user_id=user_id)
     sql = update(self.account).values(
         password=new_hash).where(self.account.c.id == user_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         conn.execute(sql)
 
 

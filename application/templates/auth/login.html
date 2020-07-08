@@ -1,46 +1,44 @@
-{% extends "layout.html" %}
 
-<div class="container"  >
+  {% extends 'layout.html' %}
+  {% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+  {{super()}}
+
+{% endblock %}
+
+{% block header %}
+
+{% endblock %}
+
 {% block body %}
+
   
-
-
-<div class="col-md-4 col-md-offset-4"  >
-
-{{ error }}
-  <form action="{{ url_for('register') }}" method="get">
-    <button name="register" type="submit">Rekisteröidy</button>
-
-  </form>
-<form method="POST" action="{{ url_for('login_auth') }}">
-  <table>
-    <tr>
-      <td>
-	{{ form.username.label }}
-      </td>
-      <td>
-	{{ form.username }}
-      </td>
-    </tr>
-    <tr>
-      <td>
-	{{ form.password.label }}
-      </td>
-      <td>
-	{{ form.password }}
-      </td>
-    </tr>
+<div class="wrapper ">
+  <div id="formContent">
     
+    <span class="mt-2">
+   
+    <form method="POST" action="{{ url_for('login_auth') }}">
+      {{ form.username(id="login",  placeholder="Käyttäjänimi") }}
+      {{ form.password(id="password", placeholder="Salasana") }}
+      <input type="submit" value="Kirjaudu Sisään"/>
+      
       {{ form.csrf_token }}
       {% if next is not none %}
     <input  type="hidden" name="next" value="{{next}}">
     {% endif %}
-    <tr>
-      <td colspan="2">
-	<input type="submit" value="Kirjaudu Sisään"/>
-      </td>
-    </tr>
-</form>
+    </form>
+    
+    <div id="formFooter">
+      <a class="underlineHover" href="{{url_for('register')}}">Rekisteröidy</a>
+    </div>
+    </span>
+  </div>
 </div>
-</div>
+
+{% endblock %}
+
+
+{% block previous_url %}
+
 {% endblock %}

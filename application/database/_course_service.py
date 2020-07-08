@@ -1,5 +1,6 @@
 from sqlalchemy.sql import Select, between, delete, desc, distinct, insert, join, select, update, func
 from sqlalchemy import nullslast
+from sqlalchemy.engine import Connection
 from sqlalchemy.exc import IntegrityError
 from string import ascii_uppercase
 from random import choice
@@ -23,7 +24,7 @@ def random_string(length: int) -> str:
         result+= choice(chars)
     return result
 
-def set_assignments(self, course: Course, for_student = True):
+def set_assignments(self, conn: Connection,  course: Course, for_student = True):
     """Set Assignment fields for the given course. If for:student is provided, only assignment where reveal date is past will be added
 
     Arguments:
@@ -42,7 +43,7 @@ def set_assignments(self, course: Course, for_student = True):
     if for_student:
         sql = sql.where(self.assignment.c.reveal < func.now())
         
-    with self.engine.connect() as conn:
+    with conn.begin():
         
         rs = conn.execute(sql)
         
@@ -67,7 +68,7 @@ def set_assignments(self, course: Course, for_student = True):
 
 
 
-def select_course_details(self, course_id:int, user_id:int, is_student:bool = True) -> Course:
+def select_course_details(self, conn: Connection,  course_id:int, user_id:int) -> Course:
     """Return the course object for the given id. For student doesn't matter, but is here cause I'm lazy (used to check if student has rights)
 
     Arguments:
@@ -80,24 +81,25 @@ def select_course_details(self, course_id:int, user_id:int, is_student:bool = Tr
     Returns:
         Course -- [course object with all simple fields set, including teacher id Assignments not set]
     """
-    
-    sql = select([self.course]).where( self.course.c.id == course_id)
+    j = self.course.join(self.account)
+    sql = select([self.course, self.account.c.first_name, self.account.c.last_name]).select_from(j).where( self.course.c.id == course_id)
 
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         self.logger.info("Fetching course %s for user %s", course_id, user_id)
         row = rs.fetchone()
-        if row is None:
+        if row is None or row[self.course.c.id]==None:
             rs.close()
             self.logger.warning("found no course matching parameters")
-            return None     
-        c = Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], id=row[self.course.c.id], code = row[self.course.c.code], teacher_id = row[self.course.c.teacher_id] )
+            return None   
+        teacher_name = row[self.account.c.last_name]+", "+row[self.account.c.first_name]
+        c = Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], id=row[self.course.c.id], code = row[self.course.c.code], teacher_id = row[self.course.c.teacher_id], teacher_name = teacher_name )
         rs.close()
     return c
 
 
 
-def insert_course(self, course:Course, teacher_id:int) -> tuple:
+def insert_course(self, conn: Connection,  course:Course, teacher_id:int) -> tuple:
     """Insert the given course object to the database
         returns generated pk, code
     Arguments:
@@ -109,7 +111,7 @@ def insert_course(self, course:Course, teacher_id:int) -> tuple:
     """
     code = random_string(6)
     sql = select([self.course.c.code]).where(self.course.c.code==code)
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         row = rs.first()
         self.logger.info("Inserting new course for user %s", teacher_id)
@@ -127,7 +129,7 @@ def insert_course(self, course:Course, teacher_id:int) -> tuple:
         rs.close()
         return id, code
 
-def select_courses_teacher(self, teacher_id:int) -> list:
+def select_courses_teacher(self, conn: Connection,  teacher_id:int) -> list:
     """Returns a list of course objects for the given id (meaning courses the teacher owns), only simple details are added
 
     Arguments:
@@ -137,27 +139,30 @@ def select_courses_teacher(self, teacher_id:int) -> list:
         list -- [list of Course objects]
     """
     self.logger.info("Fetching all courses for user (teacher) %s", teacher_id)
-    sql = select([self.course]).where(self.course.c.teacher_id== teacher_id)
-    with self.engine.connect() as conn:
+    j = self.course.join(self.account, self.account.c.id==self.course.c.teacher_id)
+    sql = select([self.course, self.course_student.c.timestamp, self.account.c.last_name, self.account.c.first_name]).select_from(j).where(self.course.c.teacher_id== teacher_id)
+    sql = sql.order_by(self.course.c.creation_date.desc())
+    with conn.begin():
         rs = conn.execute(sql)
-        courses = []
-        i=0
-        for row in rs:
-            i+=1
-            courses.append(Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], code=row[self.course.c.code], id = row[self.course.c.id], teacher_id=row[self.course.c.teacher_id]))
-            j = self.assignment.outerjoin(self.course)
-            sql = select([func.min(self.assignment.c.deadline)]).select_from(j).where((self.course.c.id == row[self.course.c.id]) & (self.assignment.c.deadline > func.now()))
-            rs = conn.execute(sql)
-            min = rs.first()[0] 
-            courses[len(courses)-1].min = min
-        self.logger.info("Found %s courses", i)
+    courses = []
+    i=0
+    for row in rs:
+        i+=1
+        name = row[self.account.c.last_name]+", "+row[self.account.c.first_name]
+        course_id=row[self.course.c.id]
+        c = Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date],id=course_id , teacher_id=row[self.course.c.teacher_id], teacher_name=name)
+        courses.append(c)
+        
+        min = self.get_next_assignment(conn, course_id)
+
+        courses[len(courses)-1].min = min
+    self.logger.info("Found %s courses", i)
     return courses
 
 
-def select_courses_student(self, student_id:int) -> list:
-    """[Returns a list of course objects for the given id (meaning courses the student has signed up for), only simple details are added
-]
 
+def select_courses_student(self, conn: Connection,  student_id:int) -> list:
+    """[Returns a list of course objects for the given id (meaning courses the student has signed up for), only simple details are added]
     Arguments:
         student_id {int} -- [student it]
 
@@ -165,26 +170,29 @@ def select_courses_student(self, student_id:int) -> list:
         [list] -- [list of Course objects]
     """
 
-    j = self.course.join(self.course_student)
-    sql = select([self.course]).select_from(j).where(self.course_student.c.student_id == student_id)
+    j = self.course.join(self.course_student).join(self.account, self.account.c.id==self.course.c.teacher_id)
+    sql = select([self.course, self.course_student.c.timestamp, self.account.c.last_name, self.account.c.first_name]).select_from(j).where(self.course_student.c.student_id == student_id)
+    sql = sql.order_by(self.course_student.c.timestamp.desc())
     self.logger.info("Fetching all courses for user (student) %s", student_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
-        courses = []
-        i=0
-        for row in rs:
-            i+=1
-            courses.append(Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], id=row[self.course.c.id], teacher_id=row[self.course.c.teacher_id]))
-            j = self.assignment.outerjoin(self.course)
-            sql = select([func.min(self.assignment.c.deadline)]).select_from(j).where((self.course.c.id == row[self.course.c.id]) & (self.assignment.c.deadline > func.now()))
-            rs = conn.execute(sql)
-            min = rs.first()[0] 
-            courses[len(courses)-1].min = min
-        rs.close()
-        self.logger.info("Found %s courses", i)
+    courses = []
+    i=0
+    for row in rs:
+        i+=1
+        name = row[self.account.c.last_name]+", "+row[self.account.c.first_name]
+        course_id=row[self.course.c.id]
+        c = Course(row[self.course.c.name], row[self.course.c.description], row[self.course.c.end_date], id=row[self.course.c.id], teacher_id=row[self.course.c.teacher_id], teacher_name=name)
+        courses.append(c)
+        
+        min = self.get_next_assignment(conn, course_id)
+        
+        courses[len(courses)-1].min = min
+    rs.close()
+    self.logger.info("Found %s courses", i)
     return courses
 
-def enlist_student(self, code:str , student_id:int):
+def enlist_student(self, conn: Connection,  code:str , student_id:int):
     """Add student sign up for the given course code
 
     Arguments:
@@ -196,7 +204,7 @@ def enlist_student(self, code:str , student_id:int):
         IntegrityError: [in case of duplicate sign up]
     """    
     sql = select([self.course.c.id]).where(self.course.c.code == code.upper())
-    with self.engine.connect() as conn:
+    with conn.begin():
         self.logger.info("Attempting enlisting student %s with code", student_id, code)
         rs = conn.execute(sql)
         row = rs.fetchone()
@@ -216,7 +224,7 @@ def enlist_student(self, code:str , student_id:int):
             self.logger.info("duplicate signup")
             raise r
 
-def select_students(self, course_id:int, teacher_id:int):
+def select_students(self, conn: Connection,  course_id:int, teacher_id:int):
     """Select all students in the given course
 
     Arguments:
@@ -233,7 +241,7 @@ def select_students(self, course_id:int, teacher_id:int):
     j = self.course.outerjoin(self.course_student).join(self.account)
     sql = select([self.course.c.teacher_id, self.account.c.id, self.account.c.username, self.account.c.first_name, self.account.c.last_name]).select_from(j).where(self.course.c.id == course_id).order_by(self.account.c.first_name, self.account.c.last_name)
     self.logger.info("Selecting all students for course %s, for user %s", course_id, teacher_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         results = []
         rs = conn.execute(sql)
         for row in rs:

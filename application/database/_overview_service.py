@@ -3,10 +3,11 @@ from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
 
 from werkzeug.utils import secure_filename
 from sqlalchemy import func, cast, String
+from sqlalchemy.engine import Connection
 from application.domain.assignment import Assignment, Task, Submit, Feedback
 from collections import namedtuple
 import pytz
-def get_course_task_stats(self, course_id:int) -> (dict,dict):
+def get_course_task_stats(self, conn: Connection,  course_id:int) -> (dict,dict):
     """[Return all task feedback for users]
 
     Args:
@@ -22,7 +23,7 @@ def get_course_task_stats(self, course_id:int) -> (dict,dict):
     j = j.outerjoin(self.submit, (self.submit.c.task_id == self.task.c.id) & (self.submit.c.owner_id == self.account.c.id)).outerjoin(self.feedback, self.feedback.c.submit_id == self.submit.c.id)
     sql = select([(self.account.c.last_name+", "+self.account.c.first_name).label("account_name"), self.account.c.id, self.assignment.c.deadline, self.task.c.number, self.feedback.c.points, (self.assignment.c.name+" - "+cast(self.task.c.number, String)).label("task_name")])
     sql = sql.where(self.course.c.id == course_id).select_from(j).order_by("account_name", self.assignment.c.deadline, self.task.c.number)
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs= conn.execute(sql)
         user_points = {}
         acc_names = {}
@@ -50,7 +51,7 @@ def get_course_task_stats(self, course_id:int) -> (dict,dict):
 
             
 
-def get_all_submits(self, assignment_id:int, task_id:int=None, convert_to_timezone = None, join_feedback = False) -> dict:
+def get_all_submits(self, conn: Connection,  assignment_id:int, task_id:int=None, convert_to_timezone = None, join_feedback = False) -> dict:
     """get all submits involved in the given params. If task_ id is not given, gets all assignment tasks
 
     Arguments:
@@ -64,7 +65,7 @@ def get_all_submits(self, assignment_id:int, task_id:int=None, convert_to_timezo
         dict -- [key student_id, value list of submits]
     """
 
-    with self.engine.connect() as conn:
+    with conn.begin():
         task_ids = []
         results = {}
         if task_id is not None:
@@ -89,7 +90,7 @@ def get_all_submits(self, assignment_id:int, task_id:int=None, convert_to_timezo
             submit_desc = row[self.submit.c.description]
             date = row[self.submit.c.last_update]
             task_id = row[self.submit.c.task_id]
-            files = self.select_file_details(submit_id = submit_id)
+            files = self.select_file_details(conn, submit_id = submit_id)
             if not join_feedback:
                 feedback = None
             else:
@@ -116,7 +117,7 @@ def get_all_submits(self, assignment_id:int, task_id:int=None, convert_to_timezo
 
 
 
-def get_first_downloads(self, file_ids:list, user_ids:list = None) -> dict:
+def get_first_downloads(self, conn: Connection,  file_ids:list, user_ids:list = None) -> dict:
     """First downloads for the given ids
         Given times are UTC and not naive
 
@@ -136,7 +137,7 @@ def get_first_downloads(self, file_ids:list, user_ids:list = None) -> dict:
     else:
         sql = sql.group_by(self.file_log.c.user_id, self.file_log.c.log_id)
 
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         self.logger.info("Select success!")
         results = {}

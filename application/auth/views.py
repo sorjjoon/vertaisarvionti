@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for
 from application import db
-#from application import db, app
-from flask import current_app as app
+
+from flask import current_app as app, g
 from flask_login import login_user, logout_user, login_required, current_user
 from application.auth import account
 
@@ -12,7 +12,7 @@ def delete_user():
     if request.method == "GET":
         return redirect(url_for("index"))
 
-    db.delete_user(current_user.get_id())
+    db.delete_user(g.conn, current_user.get_id())
     logout_user()
     return redirect(url_for("index"))
 
@@ -20,6 +20,7 @@ def delete_user():
 @app.route("/auth/logout")
 @login_required
 def logout_auth():
+    app.logger.info("Logging out user %s", current_user.get_id())
     logout_user()
     return redirect(url_for("index"))
 

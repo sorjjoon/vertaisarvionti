@@ -1,7 +1,7 @@
 from sqlalchemy.sql import Select, between, delete, desc, distinct, insert, join, select, update, func
 from sqlalchemy import func, desc
 from sqlalchemy.exc import IntegrityError
-
+from sqlalchemy.engine import Connection
 
 from application.auth.account import account
 from application.domain.comment import Comment
@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import List
 
 
-def insert_comment(self, user_id:int, text:str, submit_id:int=None, task_id:int=None, assignment_id:int=None, answer_id:int=None, visible:bool=True) -> int:
+def insert_comment(self, conn: Connection,  user_id:int, text:str, submit_id:int=None, task_id:int=None, assignment_id:int=None, answer_id:int=None, visible:bool=True) -> int:
     """[Insert given comment]
 
     Args:
@@ -46,30 +46,30 @@ def insert_comment(self, user_id:int, text:str, submit_id:int=None, task_id:int=
     else:
         raise ValueError("all arguments null")
 
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         id = rs.inserted_primary_key[0]
 
         return id
 
 
-def insert_comment_dict(self, comment_dict):
+def insert_comment_dict(self, conn: Connection,  comment_dict):
     sql = self.comment.insert().values(comment_dict)
-    with self.engine.connect() as conn:
+    with conn.begin():
         conn.execute(sql)
 
 
 
-def delete_comment(self, comment_id:int, user_id:int):
+def delete_comment(self, conn: Connection,  comment_id:int, user_id:int):
     sql = self.comment.delete().where(id=comment_id, user_id=user_id)
     self.logger.info("Deleting comment %s for user %s ", comment_id, user_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         self.logger.info("Deletion successful, deleted %s comments", rs.rowcount)
         if rs.rowcount != 1:
             self.logger.warning("Incorrect number of rows deleted")
 
-def select_comments(self, user_id:int, submit_id:int=None, task_id:int=None, assignment_id:int=None, answer_id:int=None) -> List[Comment]:
+def select_comments(self, conn: Connection,  user_id:int, submit_id:int=None, task_id:int=None, assignment_id:int=None, answer_id:int=None) -> List[Comment]:
     """Select comments matching param. Makes sure user has rights to view the comment, by checking that they are the owner, or the comment is visible
 
     Args:
@@ -104,7 +104,7 @@ def select_comments(self, user_id:int, submit_id:int=None, task_id:int=None, ass
         raise ValueError("all arguments null")
 
     self.logger.info("")
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs=conn.execute(sql)
         comments=[]
         for row in rs:
@@ -118,7 +118,7 @@ def select_comments(self, user_id:int, submit_id:int=None, task_id:int=None, ass
         return comments
 
 
-def update_comment(self, comment_id:int, user_id:int, text:str=None, visible:bool=None):
+def update_comment(self, conn: Connection,  comment_id:int, user_id:int, text:str=None, visible:bool=None):
     """No update in case text and visible left null
 
     Args:
@@ -139,7 +139,7 @@ def update_comment(self, comment_id:int, user_id:int, text:str=None, visible:boo
     if visible is not None:
         self.logger.info("Updating visibility")
         sql = sql.values(visible=visible)
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         self.logger.info("Comment update success. %s rows changed", rs.rowcount)
         if rs.rowcount!=1:

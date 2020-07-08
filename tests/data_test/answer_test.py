@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 
 import pytest
 import pytz
-from flask import url_for
+from flask import url_for, g
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,

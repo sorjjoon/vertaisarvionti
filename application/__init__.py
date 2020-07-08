@@ -4,15 +4,15 @@ from application.database.data import data
 
 #from model import db as database
 
-#from flask_sqlalchemy_core import FlaskSQLAlchemy
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
-from flask import Response
+from flask import Response, g
 
 class LaxResponse(Response):
     #Just adding samesite lax, in case it's not set
     def set_cookie(self, *args, **kwargs):
-        if 'samesite' not in kwargs or ('samesite' in kwargs and kwargs['samesite'] is None):
+        if kwargs.get('samesite') is None:
             kwargs['samesite']="Lax"
         super().set_cookie(*args, **kwargs)
         
@@ -25,7 +25,7 @@ def create_app(config):
     
     
     app = Flask(__name__)
-    sql_alchemy_db = SQLAlchemy()
+    
     global db
     if os.environ.get("SECRET_KEY"):
         app.config["SECRET_KEY"]=os.environ["SECRET_KEY"]
@@ -36,6 +36,9 @@ def create_app(config):
     #db
     app.logger.info("configuring sqlalchemy")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = dict(isolation_level="SERIALIZABLE", execution_options={"autocommit":False})
+
     if os.environ.get("UNIT_TEST"):
         app.logger.info("unit test detected, echoing sql")
         app.config["SQLALCHEMY_ECHO"] = False
@@ -49,13 +52,13 @@ def create_app(config):
         DATABASE_URL = os.environ.get("DATABASE_URL")
         app.logger.info("database url found")
         app.logger.info(DATABASE_URL)
-    
-    else:
-        
+    else:  
         DATABASE_URL = "sqlite:///vertais_data.db"
         app.logger.info("database url not found, using "+DATABASE_URL)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+
+    sql_alchemy_db = SQLAlchemy()
     sql_alchemy_db.init_app(app)
     with app.app_context():
 
@@ -65,18 +68,17 @@ def create_app(config):
         logging.getLogger("sqlalchemy").setLevel(logging.DEBUG)
         logging.getLogger("sqlalchemy").propagate = False
 
-        sql_handler = logging.FileHandler("sql_log.log","a")
+        sql_handler = logging.FileHandler("sql_log.log","w")
         formatter = logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s - %(process)d: %(message)s")
         sql_handler.setFormatter(formatter)
-        sql_handler.setLevel(logging.INFO)
+        sql_handler.setLevel(logging.DEBUG)
         logging.getLogger("sqlalchemy").addHandler(sql_handler)
         
         db = data(sql_alchemy_db.get_engine(), create=True)
     app.logger.info("Database configuration success!")
+
     # session
-    
     app.logger.info("configuring session")
-    
     #configuring custom response class, to make make same site lax the default
     app.response_class = LaxResponse
 
@@ -104,10 +106,10 @@ def create_app(config):
     #upload
     app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), "files")
     
-
+    
     @login_manager.user_loader
     def load_user(user_id):
-        return db.get_user_by_id(user_id)
+        return db.get_user_by_id(g.conn,user_id)
 
     app.logger.info("Importing views")
     with app.app_context():

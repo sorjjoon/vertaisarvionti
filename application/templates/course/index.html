@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block header %}
+<h2 class="ml-1">{{course.name}} </h2>
+{% endblock %}
+{% block body %}
+<div id="course_main" class="add_border">
+<div class="row ml-1 mr-1">
+    <div class="col">
+        <p class="mt-0 slightly_smaller_font"> Opettaja: {{course.teacher_name}} </p>
+        <p > <small>{{course.description}} </small></p>
+
+    </div>
+
+</div>
+<hr>
+<div class="ml-2 mr-2">
+<div class="row mt-3">
+    <div class="col-12">
+        <h2>
+            Tehtävät
+        </h2>
+
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+
+        {% include "course/assignment_list_template.html" %}
+    </div>
+
+
+</div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block previous_url %}
+
+{{super()}}
+
+{% endblock %}

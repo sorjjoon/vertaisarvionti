@@ -9,9 +9,24 @@
 
 
 body { padding: 0; 
-   font-family: Georgia;
+   font-family: "Perpetua, Arial";
    font-size: 16px;
+   background-color: #efefef;
 }
+hr {
+   
+   clear:both;
+   display:block;
+   width: 96%;               
+   height: 1px;   
+   display: block;
+   margin-top: 0.5em;
+   margin-bottom: 0.5em;
+   margin-left: auto;
+   margin-right: auto;
+   color: black;
+   border-width: 1px;
+ }
 
 h1, h2, h3, h4, h5, h6 {
    font-family: "Verdana", cursive, sans-serif;
@@ -29,6 +44,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .smaller_font {
    font-size: 12px;
+}
+.extra_small_font {
+   font-size: 10px;
 }
 input.larger_checkbox { 
    transform: scale(1.2);
@@ -76,17 +94,13 @@ input.larger_checkbox {
  }
  .add_border {
    border:1px solid #d9d9d9;
+   background-color: #fcfcfc;
 }
-.remove_border_top {
-   border-top: 0px;
-}
+
 .center_text {
    text-align: left
 }
-p {
-   margin-bottom: 1mm;
-   margin-bottom: 1mm;
-} 
+
 #assig_table {
    margin-top: 1rem;
 }
@@ -183,6 +197,24 @@ p {
    background-color: inherit;
    
 }
+.wrapper {
+   display: flex;
+   align-items: center;
+   flex-direction: column; 
+   justify-content: center;
+   width: 100%;
+   min-height: 100%;
+   padding: 20px;
+ }
+
+.main_wrapper {
+   height: 100%;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+
+}
+
 .reset_color {
    color: initial;
 }
@@ -195,7 +227,86 @@ p {
 #course_link:hover {
    color: black;
 }
-
-#course_row {
-   margin-left: 0;
+.clickable {
+   
+      color: inherit; 
+      text-decoration: inherit; 
+    
 }
+.clickable:hover {
+   background-color: dimgray;
+}
+.clickable div table :hover {
+   background-color: dimgray;
+}
+
+#course_container {
+   width: 32.2%;
+   min-width: 220px;
+   color: inherit;
+   text-decoration: inherit; 
+   margin-right: 0.5%;
+   margin-left: 0.5%;
+   margin-bottom: 1rem;
+   justify-content: space-evenly;
+   background-color: #f5f5f5;
+   align-items: left;
+}
+#course_container img {
+   width: 95%;
+   margin-top: 2.1%;
+   align-self: center;
+   
+}
+#course_container h1, h2, h3, h4, h5, h6 {
+   margin-top: 1%;
+   margin-left: 2.5%;
+   margin-bottom: 0.5rem;
+}
+
+
+#course_container div {
+   width: 100%;
+}
+#course_container table {
+   width: 100%;
+}
+#course_container:hover {
+   background-color:#d9d9d9 ;
+}
+#signup_container {
+   background-color: #fcfcfc;
+}
+#course_main {
+   display: flex;
+   flex-direction: column;
+}
+
+#main_nav {
+   background-color: #1d8cb6;
+}
+
+#timeline_container {
+   max-width: 300px;
+   min-width: 235px;
+}
+
+
+#timeline_container span{
+   clear: both;
+   display: inline-block;
+   width: 100%;
+}
+
+#course_name_input {
+   max-width: 200px;
+}
+
+#course_short {
+   max-width: 110px;
+}
+
+.error_text {
+   color:#931a00;
+   
+ }

@@ -2,7 +2,7 @@
 
 #from application import app, db
 from flask import render_template, redirect, url_for, request, Response, send_file
-from flask import current_app as app, session
+from flask import current_app as app, g, session
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 import io
@@ -22,7 +22,7 @@ def enlist_course():
         return render_template("/student/enlist.html")
     try:
         
-        db.enlist_student(request.form.get("code"), current_user.get_id())
+        db.enlist_student(g.conn, request.form.get("code"), current_user.get_id())
         
         return redirect(url_for("courses"))
     except ValueError:

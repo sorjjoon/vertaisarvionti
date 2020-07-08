@@ -1,7 +1,7 @@
 import datetime
 import pytz
 class Course():
-    def __init__(self, name, description, end_date:datetime.datetime, code=None, id=None, assignments = [], min=None, time_zone = "UTC", teacher_id = None, student_count = 0):
+    def __init__(self, name, description, end_date:datetime.datetime, code=None, id=None, assignments = [], min=None, time_zone = "UTC", teacher_id = None, student_count = 0, teacher_name = "", abbreviation=None):
         self.name=name
         self.description=description
         self.end_date=end_date
@@ -12,6 +12,8 @@ class Course():
         self.teacher_id =teacher_id
         self.min = min
         self.student_count = student_count
+        self.teacher_name = teacher_name
+        self.abbreviation = abbreviation
 
     def __eq__(self, other):
         if isinstance(other, Course):

@@ -2,13 +2,13 @@
 from sqlalchemy import func
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, select, update)
-
+from sqlalchemy.engine import Connection
 
 from application.domain.assignment import Assignment, Submit, Task, File, Feedback
 
 
 
-def select_submits(self, user_ids:list=None, task_ids:list = None, set_feedback=False):
+def select_submits(self, conn: Connection,  user_ids:list=None, task_ids:list = None, set_feedback=False):
     j = self.submit.outerjoin(self.file)
     if set_feedback:
         j=j.outerjoin(self.feedback)
@@ -26,7 +26,7 @@ def select_submits(self, user_ids:list=None, task_ids:list = None, set_feedback=
         
         sql = sql.where(self.submit.c.task_id.in_(task_ids))
     sql = sql.order_by(self.file.c.id) 
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         res = {}
         for row in rs:
@@ -45,10 +45,10 @@ def select_submits(self, user_ids:list=None, task_ids:list = None, set_feedback=
                 task_dict[task_id].feedback = Feedback(id=row[self.feedback.c.id], files=[], date=row[self.feedback.c.timestamp], modified=row[self.feedback.c.modified], owner_id=row[self.feedback.c.owner_id], description=row[self.feedback.c.description], visible=row[self.feedback.c.visible], submit_id=row[self.feedback.c.submit_id])
     
     return res
-def get_simple_submit(self, user_id, task_id):
+def get_simple_submit(self, conn: Connection,  user_id, task_id):
     j = self.submit.outerjoin(self.file)
     sql = select([self.submit, self.file.c.id, self.file.c.name, self.file.c.upload_date]).select_from(j).where((self.submit.c.owner_id == user_id) & (self.submit.c.task_id == task_id))
-    with self.engine.connect() as conn:
+    with conn.begin():
         rs = conn.execute(sql)
         submit = None
         for row in rs:
@@ -57,7 +57,7 @@ def get_simple_submit(self, user_id, task_id):
             submit.files.append(File(row[self.file.c.id],row[self.file.c.name], row[self.file.c.upload_date]))
         return submit
 
-def update_submit(self,user_id:int, task_id:int, assignment_id:int, files:list) -> int:
+def update_submit(self, conn: Connection, user_id:int, task_id:int, assignment_id:int, files:list) -> int:
     """Updates the given students return for the given task
     In case of no returns, creates a new one
 
@@ -73,7 +73,7 @@ def update_submit(self,user_id:int, task_id:int, assignment_id:int, files:list) 
     """
     sql = select([self.submit.c.id]).where((self.submit.c.task_id == task_id) & (self.submit.c.owner_id==user_id))
     self.logger.info("Updating submit %s for user %s", task_id, user_id)
-    with self.engine.connect() as conn:
+    with conn.begin():
         row = conn.execute(sql).first()
         if row is None:
             
@@ -88,7 +88,7 @@ def update_submit(self,user_id:int, task_id:int, assignment_id:int, files:list) 
             
             conn.execute(sql)
         
-        self.update_file(user_id, files, submit_id=submit_id)
+        self.update_file(conn, user_id, files, submit_id=submit_id)
     return submit_id
 
 

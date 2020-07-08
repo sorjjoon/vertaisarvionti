@@ -1,62 +1,36 @@
 {% extends "layout.html" %}
+{% block styles %}
+{{super()}}
+{% endblock %}
+
 
 {% block body %}
-
-
-<form method="POST" action="{{ url_for('new_course') }}">
-    <table>
-      <tr>
-        <td>
-      {{ form.name.label }}
-        </td>
-  
-        <td>
-      {{ form.name }}
-        </td>
-        <td>
-              <ul>
-                {% for error in form.name.errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
-              </ul>
-            </td>
-      </tr>
-      <tr>
-        <td>
-      {{ form.description.label }}
-        </td>
-  
-        <td>
-      {{ form.description }}
-        </td>
-        <td>
-              <ul>
-                {% for error in form.description.errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
-              </ul>
-            </td>
-      </tr>
-      <tr>
-        <td>
-      {{ form.end_date.label }}
-        </td>
-  
-        <td>
-      {{ form.end_date }}
-        </td>
-        <td>
-              <ul>
-                {% for error in form.end_date.errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
-              </ul>
-            </td>
-      </tr>
-
-    </table>
-    <input type="submit" value="Uusi kurssi" />
+<div id="new_course_wrapper" class="wrapper ">
+  <form class="add_border pb-4 pt-4 pl-4 pr-4" method="POST" action="{{ url_for('new_course') }}">
+    
+  <div class="form-group">
+    <label for="course_name_input">Kurssin nimi</label>
+    <input type="text" class="form-control" id="course_name_input"  name="course_name" >
+    {% if name_error %}
+    <small id="short_clear" class="form-text text-danger">{{name_error}}</small>
+    {% endif %}
+  </div>
+  <div class="form-group">
+    <label for="course_short">Kurssin lyhenne</label>
+    <input type="text" class="form-control" id="course_short" aria-describedby="short_clear" placeholder="3-7 merkkiä" maxlength="7" name="course_short">
+    {% if short_error %}
+    <small id="short_clear" class="form-text text-danger">{{short_error}}</small>
+    {% else %}
+    <small id="short_clear" class="form-text text-muted">Esim. MAB3</small>
+    {% endif %}
+  </div>
+  <input type="submit" value="Luo kurssi">
 </form>
 
+</div>
+
+{% endblock %}
+
+{% block previous_url %}
 
 {% endblock %}

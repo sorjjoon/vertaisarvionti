@@ -2,22 +2,13 @@ from flask import render_template, request, redirect, url_for, session
 from flask_wtf import FlaskForm
 #from application import db, app
 from wtforms import StringField, PasswordField, validators, ValidationError, BooleanField
-from flask import current_app as app
+from flask import current_app as app, g
 import datetime
 from flask_login import login_user, logout_user, login_required, current_user
 from wtforms.fields.html5 import DateField
 from application.auth import account
 from application import db
 from application.domain.course import Course
-
-
-class CourseForm(FlaskForm):
-    name = StringField("Nimi", validators=[validators.DataRequired("Kurssin nimi ei voi olla tyhjä")])
-    description = StringField("Selite")
-    end_date = DateField("Loppupäivä", validators=[validators.DataRequired("Kurssin loppupäivä ei voi olla tyhjä")])
-
-    class Meta:
-        csrf = False
 
 
 
@@ -29,24 +20,27 @@ def new_course():
         return redirect(url_for("index"))
 
     if request.method == "GET":
-        return render_template("/teacher/new_course.html", form = CourseForm())
+        return render_template("/teacher/new_course.html")
     
-    form = CourseForm(request.form)
-    if not form.validate():
-        app.logger.info("form validation failed")
-        render_template("/teacher/new_course.html", form = form)
+    course_abbreviation = request.form.get("course_short")
+    course_name = request.form.get("course_name")
+    
+    if len(course_abbreviation) > 7:
+        app.logger.info("course_abbreviation too long")
+        render_template("/teacher/new_course.html", short_error = "Kurssin lyhenne voi olla enintään 7 merkkiä")
 
-    date = form.end_date.data
-    if not date:
-        date = datetime.date.today()
+    if len(course_name) > 30:
+        app.logger.info("course_name too long")
+        render_template("/teacher/new_course.html", short_error = "Kurssin nimi voi olla enintään 30 merkkiä")
     
-    id = db.insert_course(Course(form.name.data, form.description.data, form.end_date.data, time_zone="Europe/Helsinki"), current_user.get_id())
-    
+    id = db.insert_course(g.conn, Course(course_name, None, None, time_zone="Europe/Helsinki", abbreviation = course_abbreviation), current_user.get_id())
+    app.logger.info("new course %s inserted", id)
+
     return redirect(url_for("courses"))
 
 @app.route("/view/<course_id>/students")
 @login_required
 def view_course_students(course_id):
-    students = db.select_students(course_id, current_user.get_id())
+    students = db.select_students(g.conn, course_id, current_user.get_id())
     return render_template("/teacher/course/students.html", students = students)
     

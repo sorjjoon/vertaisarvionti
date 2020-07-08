@@ -1,7 +1,7 @@
 
 #from application import app, db
 from flask import render_template, redirect, url_for, request, Response, send_file
-from flask import current_app as app, g
+from flask import current_app as app, g, g
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 import io
@@ -30,7 +30,7 @@ def utility_processor():
                 
                 extension = "download"
                 
-        except Exception as e:
+        except Exception as _:
             
             extension = "download"
         
@@ -40,42 +40,55 @@ def utility_processor():
         if deadline is None:
             return "Ei palautuspäivää"
         
-        
-        deadline_adjusted = deadline.astimezone(pytz.utc)
-        if deadline_adjusted > now:
-            diff = deadline_adjusted - now
-        else:
-            diff = now - deadline_adjusted
-        hours = diff.seconds // 3600
-        
-        minutes = (diff.seconds - 3600*hours)//60
-        seconds = (diff.seconds -3600*hours - 60*minutes)
-        if diff.days > 1:
-            first = str(diff.days)+" päivää ja "
+        if now is None:
+            app.logger.error("get_deadline_string was called with null now parameter")
+            return ""
+        if not isinstance(deadline, datetime.datetime) or not isinstance(now, datetime.datetime):
+            app.logger.error("get_deadline_string was called with without datetime, deadline %s, now: %s", deadline, now)
+            return ""
+        try:
+            deadline_adjusted = deadline.astimezone(pytz.utc)
+            if deadline_adjusted > now:
+                diff = deadline_adjusted - now
+            else:
+                diff = now - deadline_adjusted
+            hours = diff.seconds // 3600
+            
+            minutes = (diff.seconds - 3600*hours)//60
+            seconds = (diff.seconds -3600*hours - 60*minutes)
+            print(diff)
+            print(diff.days)
+            if diff.days > 1:
+                first = str(diff.days)+" päivää ja "
 
-            if hours > 1:
-                second = str(hours) + " tuntia"
-            elif minutes > 1:
-                second = str(minutes)+" minuuttia "
-            elif seconds > 1:
+                if hours > 1:
+                    second = str(hours) + " tuntia"
+                elif minutes > 1:
+                    second = str(minutes)+" minuuttia "
+                elif seconds > 1:
+                    second = str(seconds) +" sekuntia"
+            elif hours > 1:
+                first = str(hours) + " tuntia ja "
+                if minutes > 1:
+                    second = str(minutes)+" minuuttia "
+                elif seconds > 1:
+                    second = str(seconds) +" sekuntia"
+            else:
+                first = str(minutes)+" minuuttia ja "
                 second = str(seconds) +" sekuntia"
-        if hours > 1:
-            first = str(hours) + " tuntia ja "
-            if minutes > 1:
-                second = str(minutes)+" minuuttia "
-            elif seconds > 1:
-                second = str(seconds) +" sekuntia"
-        else:
-            first = str(minutes)+" minuuttia ja "
-            second = str(seconds) +" sekuntia"
 
-        
+            if now > deadline_adjusted:
+                if after[0]!=" ":
+                    after = " "+after
+                return first + second+after
 
-        if now > deadline_adjusted:
-            return first + second+after
-
-        else:
-            return first + second+before
+            else:
+                if before[0]!= " ":
+                    before = " "+before
+                return first + second+before
+        except Exception as _:
+            app.logger.error("Error geting deadline string", exc_info=True)
+            return ""
 
         
     def previous_url(current_url):
@@ -98,7 +111,7 @@ def utility_processor():
                 current_url = current_url[:current_url.rindex("/")]
 
             return current_url
-        except Exception as r:          
+        except Exception as _:          
             return "/"
 
         
@@ -109,6 +122,8 @@ def utility_processor():
 @app.before_request
 def validate_user_access():
     g.start = timer()
+    g.conn = db.engine.connect()
+    
     if not current_user.is_authenticated:
         return None
 
@@ -119,8 +134,9 @@ def validate_user_access():
     user_id = current_user.get_id()
     role = current_user.role
     app.logger.info("User %s attempted access to %s", user_id, url)
-    if "/overview/" in url:
+    if "overview" in url:
         if role != "TEACHER":
+            app.logger.warning("User %s attempted to access view without privilages", current_user)
             return redirect(url_for("index"))
     parts = url.split("/")
     assignment_id = None
@@ -137,14 +153,18 @@ def validate_user_access():
             elif part == "task":
                 task_id = int(parts[i+1])
     except:
+        app.logger.error("Error validating user access (trying to deterime assignment and task ids)", exc_info=True)
         return None
-    if not db.check_access_rights(user_id, current_user.role, course_id=course_id, assignment_id=assignment_id, task_id=task_id):
-        
+    if not db.check_access_rights(g.conn, user_id, current_user.role, course_id=course_id, assignment_id=assignment_id, task_id=task_id):    
+        app.logger.warning("User %s attempted to access view without privilages", current_user)  
         return redirect(url_for("index"))
         
 @app.teardown_request 
 def cleanup(f):
-    
+    try:
+        g.conn.close()
+    except Exception as _:
+        app.logger.error("Error in closing connection", exc_info = True)
     try:
         end = timer()
         if g.start:
@@ -152,10 +172,11 @@ def cleanup(f):
             app.logger.info("Request to %s took %s ms", request.path, duration)
         else:
             app.logger.warning("g.start not set for some reason, url: %s", request.path)
-    except Exception as r:
+    except Exception as _:
         app.logger.error("Error in request teardown", exc_info = True)
 
 @app.route("/update", methods=["PATCH"])
+@login_required
 def update_element():
     try:
         json_dic = json.loads(request.data)
@@ -172,7 +193,7 @@ def update_element():
                 visible=True
             else:
                 visible = bool(visible)
-            db.grade_submit(current_user.get_id(), submit_id,points, visible=visible)
+            db.grade_submit(g.conn, current_user.get_id(), submit_id,points, visible=visible)
 
             return Response("", 200)
         else:
@@ -184,15 +205,15 @@ def update_element():
 @app.route("/get/<int:file_id>")
 @login_required
 def get_file(file_id):
-    if not db.check_user_view_rights(current_user.get_id(),file_id):
+    if not db.check_user_view_rights(g.conn, current_user.get_id(),file_id):
         return Response("", status=403)      
-    bin_file, name = db.get_file(file_id)
+    bin_file, name = db.get_file(g.conn, file_id)
     if bin_file is None:
         return Response("", status=204)
     buffer = io.BytesIO()
     buffer.write(bin_file)
     buffer.seek(0)
-    db.insert_file_log([file_id], current_user.get_id(),"download")
+    db.insert_file_log(g.conn, [file_id], current_user.get_id(),"download")
     return send_file(buffer, as_attachment=True, attachment_filename=name)
 
 
