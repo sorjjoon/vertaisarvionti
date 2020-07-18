@@ -1,3 +1,4 @@
+from __future__ import annotations
 from sqlalchemy.sql import Select, between, delete, desc, distinct, insert, join, select, update, func
 from sqlalchemy import nullslast
 from sqlalchemy.engine import Connection
@@ -8,8 +9,11 @@ from application.domain.course import Course
 from application.auth.account import account
 from application.domain.assignment import Assignment, Task, Feedback
 from datetime import datetime
+from .data import utcnow
+from typing import List, TYPE_CHECKING
 
-
+if TYPE_CHECKING:
+    from .data import data
 
 
 from sqlalchemy.sql import Select, between, delete, desc, distinct, insert, join, select, update, func
@@ -23,7 +27,7 @@ from datetime import datetime
 
 from typing import TYPE_CHECKING
 
-def select_feedback(self, conn: Connection,  user_id:int, submit_id=None):
+def select_feedback(self:data, conn: Connection,  user_id:int, submit_id=None):
     if submit_id is None:
         return None
     sql = select([self.feedback])
@@ -40,7 +44,7 @@ def select_feedback(self, conn: Connection,  user_id:int, submit_id=None):
         return Feedback(id=row[self.feedback.c.id], points=row[self.feedback.c.points], modified = row[self.feedback.c.modified], date=row[self.feedback.c.timestamp], submit_id=row[self.feedback.c.submit_id], owner_id = row[self.feedback.c.owner_id], visible = row[self.feedback.c.visible])
 
 
-def grade_submit(self, conn: Connection,  user_id:int, submit_id, points, visible:bool=None):
+def grade_submit(self:data, conn: Connection,  user_id:int, submit_id, points, visible:bool=None):
     self.logger.info("grading submit %s for user %s", submit_id, user_id)
     sql = select([self.feedback.c.id]).where(self.feedback.c.submit_id== submit_id)
     with conn.begin():
@@ -55,7 +59,7 @@ def grade_submit(self, conn: Connection,  user_id:int, submit_id, points, visibl
             self.update_feedback(conn, id, user_id, points=points, visible=visible)
         self.logger.info("success!")
 
-def insert_feedback(self, conn: Connection,  user_id:int, submit_id, points, visible:bool=False) -> int:
+def insert_feedback(self:data, conn: Connection,  user_id:int, submit_id, points, visible:bool=False) -> int:
     """Insert feedback
 
     Args:
@@ -76,7 +80,7 @@ def insert_feedback(self, conn: Connection,  user_id:int, submit_id, points, vis
         return id
 
 
-def delete_feedback(self, conn: Connection,  feedback_id:int, user_id:int):
+def delete_feedback(self:data, conn: Connection,  feedback_id:int, user_id:int):
     sql = self.feedback.delete().where(id=feedback_id, owner_id=user_id)
     self.logger.info("Deleting feedback %s for user %s ", feedback_id, user_id)
     with conn.begin():
@@ -88,7 +92,7 @@ def delete_feedback(self, conn: Connection,  feedback_id:int, user_id:int):
 
 
 
-def update_feedback(self, conn: Connection,  feedback_id:int, user_id:int, points=None, visible:bool=None):
+def update_feedback(self:data, conn: Connection,  feedback_id:int, user_id:int, points=None, visible:bool=None):
     """No update in case points and visible left null
 
     Args:
@@ -102,7 +106,7 @@ def update_feedback(self, conn: Connection,  feedback_id:int, user_id:int, point
     if None==visible==points:
         self.logger.info("no update and visible None")
         return
-    sql = self.feedback.update().where((self.feedback.c.id==feedback_id) & (self.feedback.c.owner_id==user_id)).values(modified=func.now())
+    sql = self.feedback.update().where((self.feedback.c.id==feedback_id) & (self.feedback.c.owner_id==user_id)).values(modified=utcnow())
     
     if visible is not None:
         self.logger.info("Updating visibility")

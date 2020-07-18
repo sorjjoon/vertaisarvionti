@@ -1,0 +1,23 @@
+#comment_text {
+    width: 100%;
+}
+
+
+.comment {
+    border-radius: 9px;
+    border:1px solid #333;
+    padding: 20px;
+ }
+
+ .comment .wrapper {
+     align-items: flex-start;
+ }
+ .comment header {
+    padding-bottom: 7px;
+}
+
+ #comment_poster_name {
+   font-family: "Georgia, Serif";
+   font-size: 1.4rem;
+ }
+ 

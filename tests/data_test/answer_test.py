@@ -22,23 +22,23 @@ from application.domain.course import Course
 from .user_test import  insert_users
 from .file_test import generate_random_file
 
-from .db_fixture import (db_test_client, format_error, get_random_unicode,
+from .db_fixture import (conn, format_error, get_random_unicode,
                          insert_random_courses, random_datetime)
 
 
-def test_simple_answer(db_test_client):
+def test_simple_answer(conn):
     from application import db
     
     reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
     teacher = insert_users(db, 1, roles=["TEACHER"])[0]
     student = insert_users(db, 1, roles=["USER"])[0]
-    c_id, code = db.insert_course(Course("something", "something",reveal), teacher.id )
-    db.enlist_student(code, student.id)
+    c_id, code = db.insert_course(conn, Course("something", "something", abbreviation="something"), teacher.id )
+    db.enlist_student(conn, code, student.id)
     f = generate_random_file()
     file_name = secure_filename(get_random_unicode(30))
     werk_file = FileStorage(f, file_name)
-    a_id = db.insert_assignment(teacher.id, c_id, "ksakas", reveal, reveal, [werk_file])
-    t_id = db.insert_task(teacher.id, a_id, "something", 3, [werk_file])
+    a_id, _ = db.insert_assignment(conn, teacher.id, c_id, "ksakas", reveal, reveal, [werk_file])
+    t_id = db._insert_task(conn, teacher.id,1, a_id, "something", 3, [werk_file])
     werk_file.close()
     files = []
     correct_files = FileMultiDict()
@@ -50,16 +50,16 @@ def test_simple_answer(db_test_client):
         correct_files.add_file(file_name, werk_file)
     
     description = get_random_unicode(100)
-    db.update_answer(teacher.id, t_id, files, description, reveal=random_datetime())
+    db.update_answer(conn, teacher.id, t_id, files, description, reveal=random_datetime())
 
-    assignment = db.select_assignment(a_id, task_id=t_id)
+    assignment = db.select_assignment(conn, a_id, task_id=t_id)
 
     assert assignment.name =="ksakas"
 
     assert len(assignment.tasks) == 1
     t = assignment.tasks[0]
     assert isinstance(t, Task)
-    db.set_task_answer(assignment.tasks[0], for_student=False)
+    db.set_task_answer(conn, assignment.tasks[0], for_student=False)
 
     assert t.answer is not None
     assert isinstance(t.answer, Answer)
@@ -71,32 +71,39 @@ def test_simple_answer(db_test_client):
         assert isinstance(db_f, File)
         c_f = correct_files.get(db_f.name)
         
-        bin_file, name = db.get_file(db_f.id)
+        bin_file, name = db.get_file(conn, db_f.id)
         assert name == db_f.name, "shouldn't fail... "+str(type(name))+"  "+str(type(db_f.name))
         c_f.seek(0)
         assert bin_file == c_f.read()
         c_f.close()
 
-    db.set_task_answer(t, for_student=True)
+    db.set_task_answer(conn, t, for_student=True)
     assert t.answer is None
 
 
-def test_large_answer_insert_and_update(db_test_client):
+def test_large_answer_insert_and_update(conn):
     from application import db
     visible_reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
+    
     teacher = insert_users(db, 1, roles=["TEACHER"])[0]
-    course_id, _ = db.insert_course(Course("something", "somthing", visible_reveal, visible_reveal), teacher.id)
+    course_id, _ = db.insert_course(conn, Course("something", "somthing", visible_reveal, abbreviation="something"), teacher.id)
     f = generate_random_file()
     file_name = secure_filename(get_random_unicode(30))
     werk_file = FileStorage(f, file_name)
-    assignment_id = db.insert_assignment(teacher.id, course_id, "somthing", random_datetime(),visible_reveal, [werk_file])
+    assignment_id, _ = db.insert_assignment(conn, teacher.id, course_id, "somthing", random_datetime(),visible_reveal, [werk_file])
+    
+    
+
     werk_file.close()
     all_answers = []
     visible_answers = []
     visible_tasks = []
     correct_files = FileMultiDict()
-    for _ in range(100):
-        task_id = db.insert_task(teacher.id, assignment_id, get_random_unicode(20), 20, [])
+    for i in range(100):
+        if i==2: #doesn't matter which i, just so that some tasks have been inserted
+            a=db.select_assignment(conn, assignment_id)
+            assert a.reveal.hour == visible_reveal.hour
+        task_id = db._insert_task(conn, teacher.id,i+1, assignment_id, get_random_unicode(20), 20, [])
         hidden = random.randint(0,1)
         if not hidden:
             visible_tasks.append(task_id)
@@ -111,24 +118,25 @@ def test_large_answer_insert_and_update(db_test_client):
             files.append(werk_file)
             correct_files.add_file(task_id, werk_file, werk_file.filename)
         desc = get_random_unicode(30)
-        id =db.update_answer(teacher.id, task_id, files, desc, reveal=reveal)
+        id =db.update_answer(conn, teacher.id, task_id, files, desc, reveal=reveal)
         
         
         
-        answer = Answer(id, desc, reveal.replace(tzinfo=None), db.select_file_details(answer_id=id))
+        answer = Answer(id, desc, reveal.replace(tzinfo=None), db.select_file_details(conn, answer_id=id))
         all_answers.append(answer)
         if not hidden:
             visible_answers.append(answer)
 
     for f in files:
         f.close()
-    assignment = db.select_assignment(assignment_id, for_student=False)
+    assignment = db.select_assignment(conn, assignment_id, for_student=False)
     all_db_answers = []
     case = unittest.TestCase()
+    case.maxDiff=None
     assert len(assignment.tasks) == 100
     for t in assignment.tasks:
         assert isinstance(t, Task)
-        db.set_task_answer(t, for_student=False)
+        db.set_task_answer(conn, t, for_student=False)
         assert t.answer is not None
         a = t.answer
         assert isinstance(a, Answer)
@@ -144,13 +152,13 @@ def test_large_answer_insert_and_update(db_test_client):
     assert len(all_answers) == len(all_db_answers)
     case.maxDiff = None
     case.assertCountEqual(all_answers, all_db_answers)
-    assignment = db.select_assignment(assignment_id, for_student=True)
+    assignment = db.select_assignment(conn, assignment_id, for_student=True)
     assert len(assignment.tasks) == 100
 
     db_visibles = []
     for t in assignment.tasks:
         assert isinstance(t, Task)
-        db.set_task_answer(t, for_student=True)
+        db.set_task_answer(conn, t, for_student=True)
         if t.id not in visible_tasks:
             assert t.answer is None
             continue

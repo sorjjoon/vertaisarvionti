@@ -3,86 +3,89 @@
 
 <head>
   <meta charset="utf-8">
+  <title>
+    {% block title %}
 
+    {% endblock %}
+    Vertaisarvionti
+  </title>
   {% block styles %}
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
-    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='header.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='file-icon-classic.css') }}">
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
-    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-    crossorigin="anonymous"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
-    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-    crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='jquery/jquery-3.5.1.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='bootstrap/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='bootstrap/bootstrap.min.js') }}"></script> 
 
   <script src="{{ url_for('static', filename='scripts.js') }}"></script>
-  <title>Vertaisarvionti</title>
+
 
   {% endblock %}
 </head>
 
 
 <body>
-  {% block navi %}
-  
-  {% include "nav.html" %}
 
-{% endblock %}
 
   <main id="main" class="main_wrapper">
-    <div id="main_courses" class="container-fluid">
-      <header class="row">
-        <div id="main_header" class="col-12 pt-1 pb-1 mt-1">
-          {% block header %}
+    {% block navi %}
+
+    {% include "nav.html" %}
+
+    {% endblock %}
+    <div id="page_wrapper" class="container-fluid">
+      <header id="main_header" class="pt-1 pb-1 mt-1">
+
+        {% block header %}
 
 
 
 
 
-          {% endblock%}
-        </div>
+        {% endblock%}
+
 
       </header>
       {% block body %}
 
-      
+
 
       {% endblock %}
 
       {% block previous_url %}
 
-      {% set previous =  previous_url(request.url) %}
+      <!-- {% set previous =  previous_url(request.url) %}
       {% if previous %}
       <form method="GET" action={{previous}}>
         <input class="mt-2" type="submit" value="Takaisin">
       </form>
-      {% endif %}
+      {% endif %} -->
 
       {% endblock %}
     </div>
   </main>
-
+  {% block comment_script %}
+  {% if comment_target %}
   <script>
 
 
     $(document).ready(function () {
       console.log("ready!");
       if (document.getElementById("old_comments")) {
-        console.log("found comment field")
-        getComments("{{comment_target}}")
+        
+        getCommentsJSON("{{comment_target}}")
       }
     });
     if (document.getElementById("send_comment")) {
       document.getElementById("send_comment").addEventListener("click", sendComment)
     }
   </script>
+
+  {% endif %}
+  {% endblock %}
 </body>
-
-
-
-
 
 </html>

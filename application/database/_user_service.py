@@ -1,12 +1,15 @@
-
+from __future__ import annotations
 from sqlalchemy.sql import select, insert, delete, update, join, distinct
 from sqlalchemy.exc import IntegrityError
 from application.auth.account import account
 from sqlalchemy.engine import Connection
 #see documentation for queries 
+from .data import utcnow
+from typing import List, TYPE_CHECKING
 
-
-def delete_user(self, conn: Connection,  user_id:int) -> None:
+if TYPE_CHECKING:
+    from .data import data
+def delete_user(self:data, conn: Connection,  user_id:int) -> None:
     """deletes user with the given id. Check db if delete cascades or not (currently doesnt)
 
     Arguments:
@@ -16,7 +19,7 @@ def delete_user(self, conn: Connection,  user_id:int) -> None:
     with conn.begin():
         conn.execute(sql) 
 
-def check_user(self, conn: Connection,  username:str) -> bool:
+def check_user(self:data, conn: Connection,  username:str) -> bool:
     """check if given username is free
 
     Arguments:
@@ -36,24 +39,36 @@ def check_user(self, conn: Connection,  username:str) -> bool:
         else:
             return False
 
-def update_username(self, conn: Connection,  new_username:str, user_id:int) -> None:
+def update_user(self:data, conn: Connection, user_id:int, username:str=None, first_name=None, last_name=None) -> None:
     """Update the username for given id to match param
 
     Arguments:
         new_username {str} -- [new username]
         user_id {int} -- [id]
     """
-    sql = self.account.update().values(username=new_username).where(self.account.c.id == user_id)
-    with conn.begin():
+    if first_name==None==username==last_name:
+        self.logger.info("All params null for user update")
+        return 
+    
+    sql = self.account.update().where(self.account.c.id == user_id)
+    if username:
+        sql=sql.values(username=username)
+    if first_name:
+        sql=sql.values(first_name=first_name)
+    if last_name:
+        sql=sql.values(last_name=last_name)
+
+    with conn.begin() as trans:
         self.logger.info("Updating username for %s", user_id)
         try:
             conn.execute(sql)
             self.logger.info("Update success!")
         except IntegrityError as r:
             self.logger.info("Username taken")
+            trans.rollback()
             raise r
 
-def get_user_by_id(self, conn: Connection,  user_id: int) -> account:
+def get_user_by_id(self:data, conn: Connection,  user_id: int) -> account:
     """Get all details of user matching given id
 
     Arguments:

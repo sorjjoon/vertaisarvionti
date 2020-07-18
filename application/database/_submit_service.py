@@ -1,14 +1,34 @@
-
+from __future__ import annotations
 from sqlalchemy import func
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, select, update)
 from sqlalchemy.engine import Connection
 
 from application.domain.assignment import Assignment, Submit, Task, File, Feedback
+from .data import utcnow
+from typing import List, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .data import data
 
+def select_submits(self:data, conn: Connection,  user_ids:list=None, task_ids:list = None, set_feedback=False) -> dict:
+    """Return a dict with the submits matchign params. Leave params None for all
 
-def select_submits(self, conn: Connection,  user_ids:list=None, task_ids:list = None, set_feedback=False):
+    Args:
+        conn (Connection): [description]
+        user_ids (list, optional): [list of user_ids to fetch answers]. Defaults to None.
+        task_ids (list, optional): [list of task_ids to fetch answer]. Defaults to None.
+        set_feedback (bool, optional): [set the feedback as well]. Defaults to False.
+
+    Raises:
+        ValueError: [in case user_ids and task_ids empty]
+
+    Returns:
+        dict: [{student_id: {task_id : submit}}]
+        first key is student id, second key is task_id
+    """
+    if not user_ids and not task_ids:
+        raise ValueError("all arguments null")
     j = self.submit.outerjoin(self.file)
     if set_feedback:
         j=j.outerjoin(self.feedback)
@@ -16,8 +36,7 @@ def select_submits(self, conn: Connection,  user_ids:list=None, task_ids:list = 
     else:
         sql = select([ self.submit, self.file.c.id, self.file.c.name, self.file.c.upload_date, self.file.c.submit_id]).select_from(j)
     self.logger.info("Finding submits with parameters user_id %s (task: %s) ", user_ids, task_ids)
-    if user_ids == task_ids == None:
-        raise ValueError("all arguments null")
+    
 
     if user_ids is not None:
         sql = sql.where(self.submit.c.owner_id.in_(user_ids))
@@ -45,7 +64,7 @@ def select_submits(self, conn: Connection,  user_ids:list=None, task_ids:list = 
                 task_dict[task_id].feedback = Feedback(id=row[self.feedback.c.id], files=[], date=row[self.feedback.c.timestamp], modified=row[self.feedback.c.modified], owner_id=row[self.feedback.c.owner_id], description=row[self.feedback.c.description], visible=row[self.feedback.c.visible], submit_id=row[self.feedback.c.submit_id])
     
     return res
-def get_simple_submit(self, conn: Connection,  user_id, task_id):
+def get_simple_submit(self:data, conn: Connection,  user_id, task_id):
     j = self.submit.outerjoin(self.file)
     sql = select([self.submit, self.file.c.id, self.file.c.name, self.file.c.upload_date]).select_from(j).where((self.submit.c.owner_id == user_id) & (self.submit.c.task_id == task_id))
     with conn.begin():
@@ -57,7 +76,7 @@ def get_simple_submit(self, conn: Connection,  user_id, task_id):
             submit.files.append(File(row[self.file.c.id],row[self.file.c.name], row[self.file.c.upload_date]))
         return submit
 
-def update_submit(self, conn: Connection, user_id:int, task_id:int, assignment_id:int, files:list) -> int:
+def update_submit(self:data, conn: Connection, user_id:int, task_id:int, assignment_id:int, files:list) -> int:
     """Updates the given students return for the given task
     In case of no returns, creates a new one
 
@@ -84,7 +103,7 @@ def update_submit(self, conn: Connection, user_id:int, task_id:int, assignment_i
             
             submit_id = row[self.submit.c.id]
             self.logger.info("Found old submit id: %s", submit_id)
-            sql = update(self.submit).values(last_update = func.now()).where(self.submit.c.id == submit_id)
+            sql = update(self.submit).values(last_update = utcnow()).where(self.submit.c.id == submit_id)
             
             conn.execute(sql)
         

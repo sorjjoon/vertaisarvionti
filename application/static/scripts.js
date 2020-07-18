@@ -23,8 +23,6 @@ function sendRequest(target, method, async) {
   var xhr = new XMLHttpRequest();
   xhr.open(method, target, async);
   xhr.setRequestHeader('Content-Type', 'application/json');
-
-
   return xhr
 }
 function validateAndSendPoints() {
@@ -57,7 +55,7 @@ function validateAndSendPoints() {
     visible: visible
   };
 
-  xhr = sendRequest("/update",  "PATCH", true)
+  xhr = sendRequest("/update", "PATCH", true)
   xhr.onload = function () {
 
     if (xhr.status == 200) {
@@ -82,19 +80,18 @@ function sendComment(event) {
     var target = document.getElementById("comment_target").value
     var data = {
       text: txt.value,
-      target: target,
-      visible: true
- 
+      target: target
+
     }
-    
+
     xhr = sendRequest("/comment", "POST", true)
-    
+
     xhr.onload = function () {
 
       if (xhr.status == 200) {
         status.innerHTML = "tallennettu!"
         txt.value = ""
-        getComments(target)
+        getCommentsJSON(target)
       } else {
         status.innerHTML = "tallennus ei onnistunut"
       }
@@ -104,16 +101,23 @@ function sendComment(event) {
   }
 
 }
+function getCommentsHTML(target_id, onloadFunc) {
+  xhr = sendRequest("/comment", "GET", true);
+  xhr.setRequestHeader('X-Comment-Target', target_id);
+  xhr.setRequestHeader("Content-Type", "text/html");
+  xhr.onload = onloadFunc;
+  xhr.send();
 
-function getComments(target_id) {
-  
-  console.log("getting comments, target_id: " + target_id)
-  
+}
+
+function getCommentsJSON(target_id) {
   xhr = sendRequest("/comment", "GET", true)
   xhr.setRequestHeader('Comment-target', target_id);
+  xhr.setRequestHeader("Content-Type", "application/json")
   xhr.onload = function () {
     if (xhr.status == 200) {
-      var comments = JSON.parse(this.responseText);
+      const localText = this.responseText;
+      var comments = JSON.parse(localText);
       $("#old_comments").empty()
       comments.forEach(element => {
         parseAddComment(element)
@@ -127,26 +131,52 @@ function getComments(target_id) {
 }
 
 function parseAddComment(element) {
-  
+
   var new_comment = `
   
-        <tr id="comment_`+element.id+`">
+        <tr id="comment_`+ element.id + `">
             <td id="header">
                 <p class="pl-1">
-                    <b> `+element.owner_str+`</b>
+                    <b> `+ element.owner_str + `</b>
                 </p>
                 <p class="mb-0 pl-1">
-                    <b> `+element.date_str+`</b>
+                    <b> `+ element.date_str + `</b>
                 </p>
                 </td>
                 <td id="comment_text">
-                <p style="white-space: pre-wrap;"> `+element.text+`</p>
+                <p style="white-space: pre-wrap;"> `+ element.text + `</p>
                 </td>
             </tr>
 
        
   
   `
-  $( "#old_comments" ).append( new_comment );
-  
+  $("#old_comments").append(new_comment);
+
+}
+
+function swapIntoInput(element, new_element_str, target_url, method, status_elemnt, key_to_change) {
+  var new_element = document.createElement("div")
+  var old_element = element
+  $(new_element).html(new_element_str);
+  $(element).replaceWith(new_element);
+  new_element.onupdate = function () {
+    status_elemnt.text = "päivitetään..."
+    $(new_element).replaceWith(old_element);
+    data = {}
+    data[key_to_change] = new_element.text
+
+    xhr = sendRequest(target_url, method, true)
+    
+    xhr.onload = function () {
+      if (xhr.status == 200) {
+        status_elemnt.text = "Päivitys onnistui!"
+      } else {
+        status_elemnt.text = "Päivitys epäonnistui ("+xhr.code+")"
+      }
+    }
+    
+    xhr.send(JSON.stringify(data))
+  }
+
 }

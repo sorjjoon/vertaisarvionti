@@ -14,35 +14,37 @@ from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 
 from application.auth.account import account
-from .db_fixture import db_test_client, get_random_unicode
+from .db_fixture import conn, get_random_unicode
 
 
 def insert_users(db, n, roles=["USER", "TEACHER"]):
     accs = []
-    for _ in range(n):
-        username = get_random_unicode(20)
-        password = get_random_unicode(25)
-        first = get_random_unicode(13)
-        last = get_random_unicode(15)
-        role = random.choice(roles)
-        db.insert_user(username, password, first, last, role = role)
-        a = db.get_user(username, password)
-        assert isinstance(a, account)
-        assert a.name == username
-        assert a.first_name == first
-        assert a.last_name == last
-        assert a.role == role
-        accs.append(a)
-    return accs
+    with db.engine.connect() as conn:
+        for _ in range(n):
+            username = get_random_unicode(20)
+            password = get_random_unicode(25)
+            first = get_random_unicode(13)
+            last = get_random_unicode(15)
+            role = random.choice(roles)
+            db.insert_user(conn, username, password, first, last, role = role)
+            a = db.get_user(conn, username, password)
+            assert isinstance(a, account)
+            assert a.name == username
+            assert a.first_name == first
+            assert a.last_name == last
+            assert a.role == role
+            accs.append(a)
+        return accs
 
     
-def test_user_insert(db_test_client):
+def test_user_insert(conn):
     from application import db
-    db.insert_user("oppilas", "oppilas", "Tessa", "Testaaja")
+    db.insert_user(conn, "oppilas", "oppilas", "Tessa", "Testaaja")
     with pytest.raises(IntegrityError):
-        db.insert_user("oppilas", "oppilas", "Tessa", "Testaaja")
+        db.insert_user(conn, "oppilas", "oppilas", "Tessa", "Testaaja")
     j = db.account.join(db.role)
-    sql = Select([func.count(db.account.c.username) , db.role.c.name]).select_from(j)
+    sql = Select([func.count(db.account.c.username).label("acc_count"), db.role.c.name ]).select_from(j).where(db.role.c.name == "USER").group_by(db.role.c.name)
+    
     with db.engine.connect() as conn:
         rs = conn.execute(sql)
         row = rs.first()
@@ -50,8 +52,8 @@ def test_user_insert(db_test_client):
         role = row[1]
         assert 1==count
         assert "USER" == role
-    db.insert_user("opettaja", "opettaja", "Essi", "Esimerkki", role="TEACHER")
-    sql = Select([func.count(db.account.c.username) , db.role.c.name]).select_from(j).where(db.role.c.name == "TEACHER")
+        db.insert_user(conn, "opettaja", "opettaja", "Essi", "Esimerkki", role="TEACHER")
+    sql = Select([func.count(db.account.c.username) , db.role.c.name]).select_from(j).where(db.role.c.name == "TEACHER").group_by(db.role.c.name)
     with db.engine.connect() as conn:
         rs = conn.execute(sql)
         row = rs.first()
@@ -60,25 +62,25 @@ def test_user_insert(db_test_client):
         assert 1==count
         assert "TEACHER" == role
     
-    student = db.get_user_by_id(1)
-    teacher = db.get_user_by_id(2)
-    null = db.get_user_by_id(3)
+        student = db.get_user(conn, "oppilas", "oppilas")
+        teacher = db.get_user(conn, "opettaja", "opettaja")
+        null = db.get_user(conn, "jotain", "opettaja")
     assert student.name == "oppilas"
     assert teacher.name == "opettaja"
     assert null == None
 
 
-def test_weird_chars_large_set(db_test_client, random_roles = True):
+def test_weird_chars_large_set(conn, random_roles = True):
     from application import db
     username = "*ÄÖpÖÄPäöLÄ"
     password = "äåäÖÅÄÖÄL=(!=!?)"
     first = "ääöäöpöpäÖPLÄPLÄ"
     last = "ÄÅÄÖÖÖÄÅ,.1,.,ösa"
-    db.insert_user(username, password, first, last)
-    a1= db.get_user(username, password)
+    db.insert_user(conn, username, password, first, last)
+    a1= db.get_user(conn, username, password)
     assert a1.first_name == first
     assert a1.last_name == last
-    null = db.get_user("something", "something")
+    null = db.get_user(conn, "something", "something")
     assert null == None
 
     
@@ -105,18 +107,18 @@ def test_weird_chars_large_set(db_test_client, random_roles = True):
             role = a[i%2]
         roles.append(role)
 
-        db.insert_user(username, password, first, last, role=role)
+        db.insert_user(conn, username, password, first, last, role=role)
 
     ids = []
     for username, password, first, last, role in zip(usernames, passwords, firsts, lasts, roles):
-        acc = db.get_user(username, password)
+        acc = db.get_user(conn, username, password)
         assert acc is not None
 
         assert acc.last_name == last
         assert acc.first_name == first
         assert acc.role == role
 
-        acc2 = db.get_user_by_id(acc.id)
+        acc2 = db.get_user_by_id(conn, acc.id)
         
 
         assert acc2.id == acc.id

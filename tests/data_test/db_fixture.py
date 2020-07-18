@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 import io
 import os
@@ -11,6 +12,37 @@ from flask import url_for
 from application import create_app
 from application.domain.assignment import Assignment, Task
 from application.domain.course import Course
+from application import data
+
+def insert_users(db:data, teacher_count=1, student_count=1):
+    with db.engine.connect() as conn:
+        teachers = []
+        students = []
+        for _ in range(teacher_count):
+            username = get_random_unicode(40)
+            password = get_random_unicode(35)
+            first = get_random_unicode(5)
+            last = get_random_unicode(15)
+            db.insert_user(conn, username, password, first, last, role="TEACHER")
+            t = db.get_user(conn, username, password)
+            assert t is not None
+            teachers.append(t)
+
+        for _ in range(student_count):
+            username = get_random_unicode(40)
+            password = get_random_unicode(35)
+            first = get_random_unicode(5)
+            last = get_random_unicode(15)
+            db.insert_user(conn, username, password, first, last, role="USER")
+            s = db.get_user(conn, username, password)
+            assert s is not None
+            students.append(s)
+    return teachers, students
+
+
+                
+        
+    
 
 
 def format_error(left, right):
@@ -34,7 +66,7 @@ def format_error(left, right):
 
 
 
-def random_datetime(start = datetime.datetime.now(), time_zone = "UTC"):
+def random_datetime(start = datetime.datetime.utcnow(), time_zone = "UTC"):
     """Guaranteed to be past start
 
     Keyword Arguments:
@@ -80,26 +112,31 @@ def get_random_unicode(length):
 
 def insert_random_courses(teacher_id, db, n=random.randint(1,5)):
     ids = []
-    for _ in range(n):
-        name = get_random_unicode(random.randint(12,18))
-        desc = get_random_unicode(random.randint(9,18))
-        c = Course(name, desc, datetime.date.today(), teacher_id=teacher_id)
-        id, _ = db.insert_course(c, teacher_id)
-        ids.append(id)
+    with db.engine.connect() as conn:
+        for _ in range(n):
+            name = get_random_unicode(random.randint(12,18))
+            desc = get_random_unicode(random.randint(9,18))
+            abbr = get_random_unicode(random.randint(3,5))
+            c = Course(name, desc, teacher_id=teacher_id, abbreviation=abbr)
+            id, _ = db.insert_course(conn, c, teacher_id)
+            ids.append(id)
     return ids
 
 
-
 @pytest.fixture(scope="function")
-def db_test_client():
+def conn():
     app = create_app("DATA_TEST")
  
-    testing_client = app.test_client()
- 
+    _ = app.test_client()
+    
     # Establish an application context before running the tests.
     ctx = app.app_context()
+    
     ctx.push()
-    
-    yield testing_client  
-    
+    from application import db
+    conn = db.engine.connect()
+    yield conn
+    conn.close()
+
     ctx.pop()
+    

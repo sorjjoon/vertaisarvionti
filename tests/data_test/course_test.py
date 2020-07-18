@@ -17,33 +17,35 @@ from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
 
 from application.auth.account import account
 from application.domain.course import Course
-from .db_fixture import db_test_client, get_random_unicode, random_datetime
+from .db_fixture import conn, get_random_unicode, random_datetime
 
 
-from .db_fixture import get_random_unicode, random_datetime
 
 
 def insert_courses(db, teacher_id, n):
-    for _ in range(n):
-        name = get_random_unicode(45)
-        desc = get_random_unicode(23)
-        c = Course(name, desc, random_datetime())
-        id, code = db.insert_course(c, teacher_id)
+    with db.engine.connect() as conn:
+        for _ in range(n):
+            name = get_random_unicode(45)
+            desc = get_random_unicode(23)
+            abbr = get_random_unicode(4)
+            c = Course(name, desc, abbreviation=abbr)
+            id, code = db.insert_course(conn, c, teacher_id)
 
 
-def test_course_insert(db_test_client):
+def test_course_insert(conn):
     from application import db
     from .user_test import test_user_insert
-    test_user_insert(db_test_client)
-    student = db.get_user_by_id(1)
-    teacher = db.get_user_by_id(2)
+    test_user_insert(conn)
+    student = db.get_user(conn, "oppilas", "oppilas")
+    teacher = db.get_user(conn, "opettaja", "opettaja")
     assert student is not None
     assert teacher is not None
     name = "'öäasöä1ÅÄÖÅÄÅÖÄÅÖö23å231äl23ölasäösä"
     desc = "äöääöäpläplpä21äl.masalöas"
-    c = Course(name, desc, datetime.date.today())
-    id, code = db.insert_course(c, teacher.id)
-
+    abbr = "ASKF"
+    c = Course(name, desc, abbreviation=abbr, teacher_name=teacher.last_name+", "+teacher.first_name, teacher_id=teacher.id)
+    id, code = db.insert_course(conn, c, teacher.id)
+    c.code = code
     assert id > 0 
     assert code is not None
     with db.engine.connect() as conn:
@@ -53,12 +55,12 @@ def test_course_insert(db_test_client):
         assert row[db.course.c.id] == id
         assert row[db.course.c.description] == desc
         assert row[db.course.c.name] == name
-
-    
-
+        assert row[db.course.c.abbreviation] == abbr
+        assert row[db.course.c.code] == code
+        assert c == Course(row[db.course.c.name],row[db.course.c.description], code=row[db.course.c.code], teacher_id=teacher.id, teacher_name=teacher.last_name+", "+teacher.first_name, abbreviation=row[db.course.c.abbreviation])
     return id, code
 
-def test_large_course_insert(db_test_client):
+def test_large_course_insert(conn):
     from application import db
     teachers = []
     for _ in range(random.randint(18,23)):
@@ -67,8 +69,8 @@ def test_large_course_insert(db_test_client):
         first = get_random_unicode(15)
         last = get_random_unicode(25)
 
-        db.insert_user(username, password, first, last, role="TEACHER")
-        acc = db.get_user(username, password)
+        db.insert_user(conn, username, password, first, last, role="TEACHER")
+        acc = db.get_user(conn, username, password)
         assert acc.name == username
         assert acc.role == "TEACHER"
         teachers.append(acc)
@@ -76,70 +78,84 @@ def test_large_course_insert(db_test_client):
     for t in teachers:
         teach_courses[t.id]=[]
         for _ in range(random.randint(12,20)):
-            course = Course(get_random_unicode(20), get_random_unicode(40), random_datetime())
-            id, code = db.insert_course(course, t.id)
+            course = Course(get_random_unicode(20), get_random_unicode(40), abbreviation=get_random_unicode(3), teacher_id=t.id, teacher_name=t.last_name+", "+t.first_name)
+            id, code = db.insert_course(conn, course, t.id)
             course.id = id
             course.code = code
+            course.teacher_name = t.last_name +", "+t.first_name
+            assert course.code is not None
             teach_courses[t.id].append(course)
     random.shuffle(teachers)
+    all_courses = []
+    case = unittest.TestCase()
+    case.maxDiff=None
     for t in teachers:
-        db_courses = db.select_courses_teacher(t.id)
+        db_courses = db.select_courses_teacher(conn, t.id)
         assert len(db_courses)>=12
-        case = unittest.TestCase()
+        
         case.assertCountEqual(db_courses, teach_courses[t.id])
+        all_courses+=db_courses
+    db.insert_user(conn, "something","something" ,"something" ,"something")
+    student = db.get_user(conn, "something", "something")
+
+    for c in all_courses:
+        db.enlist_student(conn, c.code, student.id)
+    
+    student_db_courses = db.select_courses_student(conn, student.id)
+    case.assertCountEqual(student_db_courses, all_courses)
     return teachers
 
-def test_course_signup(db_test_client):
+def test_course_signup(conn):
     from application import db
     
-    id, code = test_course_insert(db_test_client)
+    id, code = test_course_insert(conn)
 
-    student = db.get_user_by_id(1)
-    teacher = db.get_user_by_id(2)
+    student = db.get_user(conn, "oppilas", "oppilas")
+    teacher = db.get_user(conn, "opettaja", "opettaja")
     assert student is not None
     assert teacher is not None
 
-    db.enlist_student(code, student.id)
+    db.enlist_student(conn, code, student.id)
 
     with db.engine.connect() as conn:
         sql = select([db.course_student.c.course_id]).where(db.course_student.c.student_id == id)
         rs = conn.execute(sql)
         assert rs.first()[db.course_student.c.course_id] == id
 
-        course = db.select_courses_student(student.id)
+        course = db.select_courses_student(conn, student.id)
         assert len(course) ==1
         assert course[0].name == "'öäasöä1ÅÄÖÅÄÅÖÄÅÖö23å231äl23ölasäösä"
         assert course[0].description == "äöääöäpläplpä21äl.masalöas"
 
-def test_invalid_signup(db_test_client):
+def test_invalid_signup(conn):
     from application import db
     
     description = get_random_unicode(100)
     reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
     teacher = insert_users(db, 1, roles=["TEACHER"])[0]
     student = insert_users(db, 1, roles=["USER"])[0]
-    id, code = db.insert_course(Course("something", "something",reveal), teacher.id)
-    db.enlist_student(code, student.id)
+    id, code = db.insert_course(conn, Course(description, "something", abbreviation="som", teacher_name=teacher.last_name+", "+teacher.first_name), teacher.id)
+    db.enlist_student(conn, code, student.id)
     with pytest.raises(IntegrityError):
-        db.enlist_student(code, student.id)
+        db.enlist_student(conn, code, student.id)
     
     with pytest.raises(ValueError):
-        db.enlist_student("something", student.id)
+        db.enlist_student(conn, "something", student.id)
 
 
 
-def test_large_course_signup(db_test_client):
+def test_large_course_signup(conn):
     from application import db
     from .user_test import test_weird_chars_large_set
-    ids = test_weird_chars_large_set(db_test_client, random_roles=False)
+    ids = test_weird_chars_large_set(conn, random_roles=False)
     
     
-    now = datetime.datetime.now()
+    
     courses = []
     teacher_courses = {}
     accs = []
     for id in ids:
-        acc = db.get_user_by_id(id)
+        acc = db.get_user_by_id(conn, id)
         assert acc.id == id
         assert acc.role == "TEACHER" or acc.role=="USER"
 
@@ -150,12 +166,13 @@ def test_large_course_signup(db_test_client):
                 
                 name = get_random_unicode(10)
                 description = get_random_unicode(20)
-                random_time = now + datetime.timedelta(days=random.randint(0, 30))
-                c = Course(name, description, random_time, teacher_id=id)
-                course_id, code = db.insert_course(c, id)
+               
+                c = Course(name, description, teacher_id=id, abbreviation=get_random_unicode(3), teacher_name=acc.last_name+", "+acc.first_name)
+                course_id, code = db.insert_course(conn, c, id)
                 c.id = course_id
                 c.code = code
                 assert c.teacher_id is not None
+                assert c.teacher_name is not None
                 courses.append(c)
                 teacher_courses[id].append(c)
     student_enlists = {}
@@ -165,33 +182,32 @@ def test_large_course_signup(db_test_client):
             enlists = random.sample(courses, k=random.randint( len(courses)//2, len(courses)-1 ))
             for c in enlists:
                 student_enlists[acc.id].append(c)
-                db.enlist_student(c.code, acc.id)
-
+                db.enlist_student(conn, c.code, acc.id)
+    case = unittest.TestCase()
+    case.maxDiff=None
     for acc in accs:
         if acc.role =="TEACHER":
-            courses = db.select_courses_teacher(acc.id)
+            courses = db.select_courses_teacher(conn, acc.id)
             real = teacher_courses[acc.id]
             assert len(real) == len(courses)
             assert len(real) > 10
-            case = unittest.TestCase()
+            
             case.assertCountEqual(courses, real)
             for c in courses:
                 assert c.teacher_id == acc.id
                 assert c in real, str(c)+" not found in"+", ".join(str(a) for a in real)
             
-            for c in real:
-                assert c in courses, str(c)+" not found in"+", ".join(str(c) for c in real)
+            
         else:
-            courses = db.select_courses_student(acc.id)
+            courses = db.select_courses_student(conn, acc.id)
             real = student_enlists[acc.id]
 
             assert len(real) == len(courses)
             assert len(real) > 6
-            case = unittest.TestCase()
+            
             case.assertCountEqual(courses, real)
             for c in courses:
                 assert c.teacher_id is not None
-                assert c in real, str(c)+"not found in"+", ".join(str(c) for c in real)
-            for c in real:
-                assert c in courses, str(c)+"not found in"+", ".join(str(c) for c in real)
+                
+            
 

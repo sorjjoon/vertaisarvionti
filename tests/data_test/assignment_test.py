@@ -18,33 +18,37 @@ from application.domain.assignment import Assignment, Task
 from application.domain.course import Course
 
 
-from .db_fixture import (db_test_client, format_error, get_random_unicode,
+from .db_fixture import (conn, format_error, get_random_unicode,
                          insert_random_courses, random_datetime)
 
 
-def test_simple_assignment(db_test_client, a_files = [], t_files=[]):
+def test_simple_assignment(conn, a_files = [], t_files=[]):
     from application import db
     from .course_test import test_course_insert
-    id, code = test_course_insert(db_test_client)
-    student = db.get_user("oppilas", "oppilas")
-    teacher = db.get_user("opettaja", "opettaja")
+    id, code = test_course_insert(conn)
+    student = db.get_user(conn, "oppilas", "oppilas")
+    teacher = db.get_user(conn, "opettaja", "opettaja")
 
     assert student is not None
     assert teacher is not None
 
-    db.enlist_student(code, student.id)
+    db.enlist_student(conn, code, student.id)
     
     visible_a_name = get_random_unicode(30)
     reveal = random_datetime()
     deadline = random_datetime(start=reveal)
     
-    a_id = db.insert_assignment(teacher.id, id, visible_a_name, deadline,reveal, a_files )
+    
 
     points = random.randint(5, 20)
     t_desc = get_random_unicode(30)
-
-    t_id = db.insert_task(teacher.id, a_id, t_desc, points, t_files)
+    tasks =[Task(None, 1, points,t_desc, t_files)]
     
+    a_id, _ = db.insert_assignment(conn, teacher.id, id, visible_a_name, deadline,reveal, a_files, tasks=tasks)
+
+    a=db.select_assignment(conn, a_id)
+    t_id = a.tasks[0].id
+
     with db.engine.connect() as conn:
         sql = select([db.assignment]).where(db.assignment.c.id == a_id)
         rs = conn.execute(sql)
@@ -65,10 +69,10 @@ def test_simple_assignment(db_test_client, a_files = [], t_files=[]):
         assert row[db.task.c.points] == points
         assert row[db.task.c.assignment_id] == a_id
 
-        null = db.select_assignment(28128218)
+        null = db.select_assignment(conn, 28128218)
         assert null is None
 
-        a = db.select_assignment(a_id)
+        a = db.select_assignment(conn, a_id)
         assert isinstance(a, Assignment)
         assert len(a.tasks) ==1
         
@@ -85,40 +89,46 @@ def test_simple_assignment(db_test_client, a_files = [], t_files=[]):
         assert t.points == points
         assert t.assignment_id == a_id
 
-        null = db.select_assignment(a_id, for_student=True)
+        null = db.select_assignment(conn, a_id, for_student=True)
         assert null is None
     
-def test_course_set_assignment_visibility(db_test_client, a_files = [], t_files=[]):
+def test_course_set_assignment_visibility(conn, a_files = [], t_files=[]):
     from application import db
     from .course_test import test_course_insert
-    id, _ = test_course_insert(db_test_client)
-    teacher = db.get_user("opettaja", "opettaja")
+    id, _ = test_course_insert(conn)
+    teacher = db.get_user(conn, "opettaja", "opettaja")
 
     visble_a_name = get_random_unicode(30)
     visble_reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(hours=1)
     visble_deadline = random_datetime(start=visble_reveal)
     
-    visble_a_id = db.insert_assignment(teacher.id, id, visble_a_name, visble_deadline,visble_reveal, a_files )
+    points = random.randint(5, 20)
+    t_desc = get_random_unicode(30)
+    task1= Task(None, 1, points, t_desc)
+    visble_a_id, _ = db.insert_assignment(conn, teacher.id, id, visble_a_name, visble_deadline,visble_reveal, a_files , tasks=[task1])
 
     a_name2 = get_random_unicode(30)
     reveal2 = pytz.utc.localize(datetime.datetime.utcnow()) + datetime.timedelta(hours=1)
     deadline2 = random_datetime(start=visble_reveal)
     
-    a_id2 = db.insert_assignment(teacher.id, id, a_name2, deadline2,reveal2, a_files)
+    
 
     points = random.randint(5, 20)
     t_desc = get_random_unicode(30)
-
-    db.insert_task(teacher.id, visble_a_id, t_desc, points, t_files)
+    task1= Task(None, 1, points, t_desc)
+    
     points = random.randint(5, 20)
     t_desc = get_random_unicode(30)
+    task2= Task(None, 1, points, t_desc)
 
-    db.insert_task(teacher.id, a_id2, t_desc, points, t_files)
-    cs = db.select_courses_teacher(teacher.id)
+    
+    tasks=[task1, task2]
+    a_id2, _ = db.insert_assignment(conn, teacher.id, id, a_name2, deadline2,reveal2, a_files, tasks=tasks)
+    cs = db.select_courses_teacher(conn, teacher.id)
     assert len(cs)==1
     c = cs[0]
     assert isinstance(c, Course)
-    db.set_assignments(c, for_student=True)
+    db.set_assignments(conn, c, for_student=True)
 
     assert len(c.assignments)==1, "can't see assignment that should be visible"
     assert isinstance(c.assignments[0], Assignment)
@@ -126,13 +136,14 @@ def test_course_set_assignment_visibility(db_test_client, a_files = [], t_files=
     assert c.assignments[0].name == visble_a_name, "assignment incorrect"
     assert c.assignments[0].reveal == visble_reveal, "assignment incorrect"
     assert c.assignments[0].deadline == visble_deadline, "assignment incorrect"
+    assert len(c.assignments[0].tasks)==1
 
 
-    cs = db.select_courses_teacher(teacher.id)
+    cs = db.select_courses_teacher(conn, teacher.id)
     assert len(cs)==1
     c = cs[0]
     assert isinstance(c, Course)
-    db.set_assignments(c, for_student=False)
+    db.set_assignments(conn, c, for_student=False)
     assert len(c.assignments)==2
     first = Assignment(visble_a_id, visble_a_name, visble_reveal.replace(tzinfo=None), visble_deadline.replace(tzinfo=None), [])
     assert first in c.assignments
@@ -141,17 +152,17 @@ def test_course_set_assignment_visibility(db_test_client, a_files = [], t_files=
     assert second in c.assignments
 
 
-def test_large_assignment_timezone_helsinki(db_test_client, files = []):
+def test_large_assignment_timezone_helsinki(conn, files = []):
     from application import db
-    db.insert_user("opettaja1", "opettaja", "Who","Cares",role="TEACHER")
-    db.insert_user("opettaja2", "opettaja", "Who","Cares",role="TEACHER")
-    db.insert_user("opettaja3", "opettaja", "Who","Cares",role="TEACHER")
-    db.insert_user("opettaja4", "opettaja", "Who","Cares",role="TEACHER")
+    db.insert_user(conn, "opettaja1", "opettaja", "Who","Cares",role="TEACHER")
+    db.insert_user(conn, "opettaja2", "opettaja", "Who","Cares",role="TEACHER")
+    db.insert_user(conn, "opettaja3", "opettaja", "Who","Cares",role="TEACHER")
+    db.insert_user(conn, "opettaja4", "opettaja", "Who","Cares",role="TEACHER")
     
-    teacher1 = db.get_user("opettaja1", "opettaja")
-    teacher2 = db.get_user("opettaja2","opettaja")
-    teacher3 = db.get_user("opettaja3","opettaja")
-    teacher4 = db.get_user("opettaja4","opettaja")
+    teacher1 = db.get_user(conn, "opettaja1", "opettaja")
+    teacher2 = db.get_user(conn, "opettaja2","opettaja")
+    teacher3 = db.get_user(conn, "opettaja3","opettaja")
+    teacher4 = db.get_user(conn, "opettaja4","opettaja")
     teachers = [teacher1, teacher2, teacher3, teacher4]
 
     assert teacher1 is not None
@@ -165,24 +176,32 @@ def test_large_assignment_timezone_helsinki(db_test_client, files = []):
         visible_assignments = {}
         course_ids=insert_random_courses(teacher.id, db)
         assert len(course_ids)>0
-        for _ in range(random.randint(12, 21)): #insert assignments
+        for _ in range(random.randint(15, 21)): #insert assignments
             name = get_random_unicode(15)
             course_id = random.choice(course_ids)
             if random.randint(0,1) or not visible_assignments.get(course_id):
                 visible = True
-                reveal = pytz.timezone("Europe/Helsinki").localize(datetime.datetime.now()) - datetime.timedelta(minutes=1)
+                reveal = pytz.timezone("Europe/Helsinki").localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
             else:
                 visible = False
-                reveal = pytz.timezone("Europe/Helsinki").localize(datetime.datetime.now()) + datetime.timedelta(hours=random.randint(3,5), minutes=1)
+                reveal = pytz.timezone("Europe/Helsinki").localize(datetime.datetime.utcnow()) + datetime.timedelta(hours=random.randint(3,5), minutes=1)
             deadline = random_datetime(start=reveal, time_zone="Europe/Helsinki")
             
-            assig_id = db.insert_assignment(teacher1.id, course_id,name, deadline, reveal, files)
+            
             tasks = []
-            for _ in range(random.randint(2,15)):
-                task = random_task(assig_id, files)
-                task_id = db.insert_task(teacher.id, assig_id, task.description, task.points, files)
-                task.id=task_id
+            number = 1
+            
+            for __ in range(random.randint(2,15)):
+                task = random_task(None, files)
+                task.number=number
                 tasks.append(task)
+                number+=1
+            assig_id, task_ids = db.insert_assignment(conn, teacher1.id, course_id,name, deadline, reveal, files, tasks=tasks)
+
+            for i in range(len(task_ids)):
+                tasks[i].id = task_ids[i]
+                tasks[i].assignment_id = assig_id
+
             result_dict = {"teacher_id":teacher.id, "id":assig_id, "reveal":reveal, "deadline":deadline, "course_id":course_id, "name":name, "files":files, "tasks":tasks}
             if not all_assignments.get(course_id):
                 all_assignments[course_id]=[result_dict]
@@ -198,9 +217,10 @@ def test_large_assignment_timezone_helsinki(db_test_client, files = []):
 
         temp = (teacher.id, all_assignments, visible_assignments)
         teacher_assigments.append(temp)
-
+    case = unittest.TestCase()
+    case.maxDiff = None
     for teacher_id, all_assignments, visible_assignments in teacher_assigments:
-        courses = db.select_courses_teacher(teacher_id)
+        courses = db.select_courses_teacher(conn, teacher_id)
         assert len(courses)
         course_ids = [c.id for c in courses]
         for key in all_assignments.keys():
@@ -209,7 +229,7 @@ def test_large_assignment_timezone_helsinki(db_test_client, files = []):
             correct_assignments = all_assignments.get(course.id, [])
             correct_visible_assignments = visible_assignments.get(course.id)
             
-            db.set_assignments(course, for_student=False)
+            db.set_assignments(conn, course, for_student=False)
             course.set_timezones("Europe/Helsinki")
             assert len(course.assignments)==len(correct_assignments), "wrong number of assignments"
 
@@ -223,10 +243,12 @@ def test_large_assignment_timezone_helsinki(db_test_client, files = []):
                 assert assignment_dic["course_id"] == course.id
                 assert a.deadline == assignment_dic["deadline"]
                 assert a.reveal == assignment_dic["reveal"]
-                case = unittest.TestCase()
+                
+                
+                assert len(assignment_dic["tasks"])== len(a.tasks)
                 case.assertCountEqual(assignment_dic["tasks"],a.tasks)
 
-            db.set_assignments(course, for_student=True)
+            db.set_assignments(conn, course, for_student=True)
             for a in course.assignments:
                 assert isinstance(a, Assignment)
                 assignment_dic = get_correct_assignment(a.id, correct_visible_assignments)
@@ -237,11 +259,26 @@ def test_large_assignment_timezone_helsinki(db_test_client, files = []):
                 assert assignment_dic["course_id"] == course.id
                 assert a.deadline == assignment_dic["deadline"]
                 assert a.reveal == assignment_dic["reveal"]
-                case = unittest.TestCase()
+                
+                
+                assert len(assignment_dic["tasks"])== len(a.tasks)
                 case.assertCountEqual(assignment_dic["tasks"],a.tasks)    
     return teachers
             
+def test_assignment_in_time(conn):
+    from application import db
+    from .course_test import test_course_insert
+    course_id, code = test_course_insert(conn)
+    student = db.get_user(conn, "oppilas", "oppilas")
+    teacher = db.get_user(conn, "opettaja", "opettaja")
 
+    assert student is not None
+    assert teacher is not None
+
+    db.enlist_student(conn, code, student.id)
+
+    
+    
 
 def get_correct_assignment(a_id, assig_dics):
     for dic in assig_dics:
@@ -255,12 +292,12 @@ def random_assignment(course_id, teacher_id, hidden=False):
     if hidden:
         reveal = random_datetime()
     else:
-        reveal = pytz.utc.localize(datetime.datetime.now())
+        reveal = pytz.utc.localize(datetime.datetime.utcnow())
     deadline = random_datetime(start = reveal)
     name = get_random_unicode(20)
     return name, deadline, reveal
 
         
 def random_task(a_id, files):
-    t = Task(0, random.randint(5,8), get_random_unicode(random.randint(10,20)), assignment_id=a_id, files=files)
+    t = Task(0,random.randint(1,20), random.randint(5,8), get_random_unicode(random.randint(10,20)), assignment_id=a_id, files=files)
     return t

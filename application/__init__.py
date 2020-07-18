@@ -7,7 +7,7 @@ from application.database.data import data
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
-from flask import Response, g
+from flask import Response, g #g is for login manager
 
 class LaxResponse(Response):
     #Just adding samesite lax, in case it's not set
@@ -37,7 +37,7 @@ def create_app(config):
     app.logger.info("configuring sqlalchemy")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = dict(isolation_level="SERIALIZABLE", execution_options={"autocommit":False})
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = dict(isolation_level="READ COMMITTED", connect_args={"options": "-c timezone=utc"})
 
     if os.environ.get("UNIT_TEST"):
         app.logger.info("unit test detected, echoing sql")
@@ -64,8 +64,11 @@ def create_app(config):
 
         if config=="DATA_TEST":
             data.drop_all(sql_alchemy_db.get_engine())
+            logging.getLogger("sqlalchemy").setLevel(logging.INFO)
+        else:
+            logging.getLogger("sqlalchemy").setLevel(logging.DEBUG)
 
-        logging.getLogger("sqlalchemy").setLevel(logging.DEBUG)
+        
         logging.getLogger("sqlalchemy").propagate = False
 
         sql_handler = logging.FileHandler("sql_log.log","w")
@@ -75,6 +78,8 @@ def create_app(config):
         logging.getLogger("sqlalchemy").addHandler(sql_handler)
         
         db = data(sql_alchemy_db.get_engine(), create=True)
+        
+        
     app.logger.info("Database configuration success!")
 
     # session
@@ -89,8 +94,10 @@ def create_app(config):
     
     
     with app.app_context():
+        #init doesn't work for some reason, session_interface ends up None
         sess = Session(app)
         sess.app.session_interface.db.create_all()
+    app.logger.info("Session configuration success!")
     # login
     from flask_login import LoginManager
     
@@ -99,7 +106,7 @@ def create_app(config):
     login_manager.init_app(app)
 
     login_manager.login_view = "login_auth"
-    login_manager.login_message = "Sinun tulee kirjautua sisään"
+    login_manager.login_message = "Ole hyvä ja kirjaudu sisään"
 
     from application.auth import account
 

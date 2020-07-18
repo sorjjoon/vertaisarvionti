@@ -1,4 +1,9 @@
 {% extends "layout.html" %}
+
+{% block title %}
+Kurssini -
+{% endblock %}
+
 {% block styles %}
 {{super()}}
 
@@ -13,57 +18,106 @@
 
 {% block body %}
 <div class="row mr-1 ml-1">
-    <div class=" col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-9">
+    <div id="index_container" class=" col-xs-12 col-sm-12 col-md-8 col-lg-9 col-xl-9">
         <div id="signup_container" class="add_border ">
-            <div class="row ">
-                <div class="col-12  pt-1 pb-1">
-                    <h5>
-                        Ilmoittautumiset
-                    </h5>
-                    <hr>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-12 pt-1 pb-1">
-                    <div class="d-flex flex-row flex-wrap justify-content-start">
-                        {% if courses %}
-                        {% for course in courses %}
-                        <a id="course_container" href="{{url_for('view_course', course_id=course.id)}}" class="d-flex flex-column add_border">
-                            <img src="{{ url_for('static', filename='images/1.jpg') }}">
-                            <h5 class="text">{{course.name}}</h5>
-                        </a>
-                        {% endfor %}
-                        {% else %}
+            <header>
 
-                        <h5> Et ole vielä ilmoittautunut kursseille </h5>
+                <h3>
+                    Kurssini
+                </h3>
+                <hr>
+            </header>
 
 
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="col-3 d-none d-md-block ">
-        <div id="timeline_container" class="container add_border">
-            <h6>
-                Palautukset tällä viikolla
-            </h6>
-            <ul>
-                {% for assignment in incoming_assignments %}
-                <li>
-                    <a
-                        href="{{url_for("view_assig", assignment_id=assignment.id, course_id=assignment.course_id)}}">{{assignment.name}}</a>
+            <div id="course_list_container" class="d-flex flex-row flex-wrap justify-content-start">
 
-                    <span class="slightly_smaller_font">Palautettu:
-                        ({{assignment.submit_count ~ "/" ~ assignment.task_count}}) </span>
-                    <span class="smaller_font mt-0"> {{get_deadline_string(assignment.deadline)}} </span>
-                </li>
+                {% if courses %}
+                {% for course in courses %}
+                <a id="course_container" href="{{url_for('view_course', course_id=course.id)}}"
+                    class=" d-flex flex-column add_border">
+                    <img src="{{ url_for('static', filename='images/1.jpg') }}">
+                    <h5 class="text">{{course.name}}</h5>
+                </a>
                 {% endfor %}
-            </ul>
+                {% else %}
+                {% if current_user.role == "USER" %}
+                <h6> Et ole vielä ilmoittautunut kursseille (voit rekisteröityä kursseille oikeasta yläkulmasta)
+                </h6>
+                {% else %}
+                <h6> Et ole vielä luonut kursseja (voit luoda uuden kurssin oikeasta yläkulmasta) </h6>
+                {% endif %}
+
+                {% endif %}
+
+
+            </div>
         </div>
     </div>
+
+    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-3 col-xl-3">
+        <div id="timeline_container" class="container add_border">
+            <header>
+                <h5>
+                    Palautukset tällä viikolla
+                </h5>
+            </header>
+            <div class="wrapper">
+                <ul>
+                    {% if incoming_assignments %}
+                    {% for assignment in incoming_assignments %}
+                    <li>
+                        <a
+                            href="{{url_for("view_assig", assignment_id=assignment.id, course_id=assignment.course_id)}}">{{assignment.name}}</a>
+
+                        <span class="slightly_smaller_font">Palautettu:
+                            ({{assignment.submit_count ~ "/" ~ assignment.task_count}}) </span>
+                        <span class="smaller_font mt-0"> {{get_deadline_string(assignment.deadline)}} </span>
+                    </li>
+                    {% endfor %}
+                    {% else %}
+                    <li>
+                        <p>
+                            Ei palautuksia tulevalla viikolla
+                        </p>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        {% if current_user.role == "USER" %}
+        <div id="enlist_container" class="container add_border">
+            <h5>
+                Rekisteröidy kurssille
+            </h5>
+            <form method="POST" action="{{ url_for('courses') }}">
+                <table>
+                    {% if signup_error%}
+                    <tr>
+                        <td>
+                            <span class="error_text smaller_font">
+                                {{signup_error}}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr class="mb-1">
+                        <td>
+                            <input type="text" name=code class="form-control" placeholder="Kurssikoodi" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="submit" class="full_width" value="Lisää minut kurssille" />
+                        </td>
+                    </tr>
+                </table>
+            </form>
+
+        </div>
+        {% endif %}
+    </div>
+
 </div>
 {% endblock %}
 

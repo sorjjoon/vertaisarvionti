@@ -5,6 +5,8 @@ __pycache__
 data.db
 .coverage
 .vscode
+tests/pytest_coverage
+testing
 !/documentation
 !requirements.txt
 procfile

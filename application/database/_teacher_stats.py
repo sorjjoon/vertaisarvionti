@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 
 from sqlalchemy import func
@@ -6,9 +7,12 @@ from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
 from werkzeug.utils import secure_filename
 from sqlalchemy.engine import Connection
 from application.domain.assignment import Assignment, File, Submit, Task
+from .data import utcnow
+from typing import List, TYPE_CHECKING
 
-
-def count_students(self, conn: Connection,  teacher_id:int, course_id:int=None) -> tuple:
+if TYPE_CHECKING:
+    from .data import data
+def count_students(self:data, conn: Connection,  teacher_id:int, course_id:int=None) -> tuple:
     """placeholder for student counts, currenylu returns tuples
 
     Arguments:

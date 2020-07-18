@@ -1,4 +1,4 @@
-
+from __future__ import annotations
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 from sqlalchemy.engine import Connection
@@ -9,8 +9,15 @@ from werkzeug.utils import secure_filename
 from application.domain.assignment import File
 from typing import List, Tuple
 import os
+from typing import List, TYPE_CHECKING
+from .data import utcnow
 
-def check_user_delete_rights(self, conn: Connection,  user_id:int, file_id:int, is_teacher:bool=False) -> bool:
+
+if TYPE_CHECKING:
+    from .data import data
+
+
+def check_user_delete_rights(self:data, conn: Connection,  user_id:int, file_id:int, is_teacher:bool=False) -> bool:
     """check if user has rights to delete a given file. is teacher argument doesn't do anything, but could be expanded to allow teachers to delete student files
 
     Arguments:
@@ -35,7 +42,7 @@ def check_user_delete_rights(self, conn: Connection,  user_id:int, file_id:int, 
         self.logger.info("rights ok")
         return True
 
-def check_user_view_rights(self, conn: Connection,  user_id:int, file_id:int, is_teacher=False) -> bool:
+def check_user_view_rights(self:data, conn: Connection,  user_id:int, file_id:int, is_teacher=False) -> bool:
     """test if user has the rights to view selected file. Students can onlly access files for which have been revealed to them, teachers can access all belonging to their course
 
     Arguments:
@@ -72,7 +79,7 @@ def check_user_view_rights(self, conn: Connection,  user_id:int, file_id:int, is
                 return False
                 
 
-            sql = select([self.answer.c.id]).where((self.answer.c.id == answer_id) & (self.answer.c.reveal < func.now()) ) 
+            sql = select([self.answer.c.id]).where((self.answer.c.id == answer_id) & (self.answer.c.reveal < utcnow()) ) 
             rs = conn.execute(sql)
             row = rs.first()
             if row is None:
@@ -137,7 +144,7 @@ def check_user_view_rights(self, conn: Connection,  user_id:int, file_id:int, is
             
             
             j = self.course.outerjoin(self.assignment).outerjoin(self.course_student)
-            sql = select([self.assignment.c.id]).select_from(j).where((self.assignment.c.id == assig_id) & (self.course_student.c.student_id == user_id) & (self.assignment.c.reveal < func.now()))
+            sql = select([self.assignment.c.id]).select_from(j).where((self.assignment.c.id == assig_id) & (self.course_student.c.student_id == user_id) & (self.assignment.c.reveal < utcnow()))
             rs = conn.execute(sql)
             row = rs.first()
             if row is None:
@@ -150,7 +157,7 @@ def check_user_view_rights(self, conn: Connection,  user_id:int, file_id:int, is
 
 
 
-def update_file(self, conn: Connection,  user_id:int,files:list, submit_id:int=None, assignment_id:int=None, task_id:int=None, answer_id:int=None, files_to_delete:list = None) -> int: 
+def update_file(self:data, conn: Connection,  user_id:int,files:list, submit_id:int=None, assignment_id:int=None, task_id:int=None, answer_id:int=None, comment_id:int=None, files_to_delete:list = None) -> int: 
     """deletes all files matching given parameters, then inserts new files with the same parameters. Doesn't delete files user doesn't own, but doesn't check if the user has rights
     to insert files for the activity he is inserting them for. At least one of the given arugments must not be null
     if assignment id is not given, doesn't check that the other ids provided are null (if multiple are checks that all non nulls match), if assignment id is given, checks that other non given fiels are null
@@ -195,9 +202,14 @@ def update_file(self, conn: Connection,  user_id:int,files:list, submit_id:int=N
         self.logger.info("Updating file for user %s task id: %s",user_id,task_id)
         
         sql = sql.where(self.file.c.task_id == task_id)
+    elif comment_id is not None:
+        self.logger.info("Updating file for user %s comment_id id: %s",user_id,comment_id)
+        sql = sql.where(self.file.c.comment_id == comment_id)
     elif assignment_id is not None:
         self.logger.info("Updating file for user %s assignment id: %s",user_id,assignment_id)
         sql = sql.where(self.file.c.assignment_id == assignment_id)
+    
+
 
     if files_to_delete is not None:
         self.logger.info("only deleting files: "+str(files_to_delete))
@@ -208,16 +220,20 @@ def update_file(self, conn: Connection,  user_id:int,files:list, submit_id:int=N
         
         rs =conn.execute(sql)
         count = rs.rowcount
-        deleted_ids = rs.fetchall()
+        
         self.logger.info("deletion complete, deleted "+str(count)+" files for user "+str(user_id))
-        self.insert_file_log(conn, deleted_ids, user_id, "delete")
+        rows = rs.fetchall()
+        if rows:
+            deleted_ids = [r[0] for r in rows]
+            self.insert_file_log(conn, deleted_ids, user_id, "delete")
+
         self.insert_files(conn, user_id, files, submit_id=submit_id, assignment_id=assignment_id, task_id=task_id, answer_id=answer_id)
         
         return count   
 
 
-def insert_files(self, conn: Connection,  user_id:int,files:list, submit_id:int=None, assignment_id:int=None, task_id:int=None, answer_id:int=None):
-    """Insert given files. If you want to delete previous files, use update_file instead
+def insert_files(self:data, conn: Connection,  user_id:int,files:list, submit_id:int=None, assignment_id:int=None, task_id:int=None, answer_id:int=None, comment_id:int=None):
+    """Insert given files. If you want to delete previous files, use update_file instead. 
 
     Args:
         user_id (int): [description]
@@ -226,6 +242,7 @@ def insert_files(self, conn: Connection,  user_id:int,files:list, submit_id:int=
         assignment_id (int, optional): [description]. Defaults to None.
         task_id (int, optional): [description]. Defaults to None.
         answer_id (int, optional): [description]. Defaults to None.
+        comment_id (int, optional): [description]. Defaults to None.
     """
     with conn.begin():
         self.logger.info("inserting %s files for user %s",len(files) ,str(user_id))
@@ -272,6 +289,10 @@ def insert_files(self, conn: Connection,  user_id:int,files:list, submit_id:int=
             self.logger.info("inserting for assignment "+str(assignment_id))
             for dic in insert_dics:
                 dic[self.file.c.assignment_id]=assignment_id
+        elif comment_id is not None:
+            self.logger.info("inserting for assignment "+str(assignment_id))
+            for dic in insert_dics:
+                dic[self.file.c.comment_id]=comment_id
         else:
             self.logger.error("Null ids for insert")
             raise ValueError("File null id insert")
@@ -292,8 +313,8 @@ def insert_files(self, conn: Connection,  user_id:int,files:list, submit_id:int=
             
     
 
-def select_file_details(self, conn: Connection,  assignment_id:int=None, task_id:int=None, file_id:int = None, answer_id:int=None, submit_id:int=None) -> List[File]:
-    """Select file id, name and upload_date from the database fot the given params. params not given (or None values given ) are ignored, except if assignment id is given
+def select_file_details(self:data, conn: Connection,  assignment_id:int=None, task_id:int=None, file_id:int = None, answer_id:int=None, submit_id:int=None, comment_id:int=None) -> List[File]:
+    """Select file id, name and upload_date from the database fot the given params. params not given (or None values given ) are ignored
 
     Keyword Arguments:
         assignment_id {int} -- [assig id] (default: {None})
@@ -302,6 +323,7 @@ def select_file_details(self, conn: Connection,  assignment_id:int=None, task_id
         answer_id {int} -- [answer id] (default: {None})
 
         submit_id {int} -- [answer id] (default: {None})
+        comment_id {int} -- [answer id] (default: {None})
 
     Raises:
         ValueError: [in case all given params are null]
@@ -323,6 +345,9 @@ def select_file_details(self, conn: Connection,  assignment_id:int=None, task_id
     elif task_id is not None:
         self.logger.info("Fetching files for task: %s", task_id)
         sql = sql.where(self.file.c.task_id == task_id)
+    elif comment_id is not None:
+        self.logger.info("Fetching files for comment  %s",comment_id)
+        sql = sql.where(self.file.c.comment_id == comment_id)
     elif assignment_id is not None:
         self.logger.info("Fetching files for assignment: %s", assignment_id)
         sql = sql.where(self.file.c.assignment_id == assignment_id)
@@ -344,7 +369,7 @@ def select_file_details(self, conn: Connection,  assignment_id:int=None, task_id
         self.logger.info("Select success! Found %s files",i)
     return results
 
-def delete_file(self, conn: Connection,  file_id:int, owner_id) ->int:
+def delete_file(self:data, conn: Connection,  file_id:int, owner_id) ->int:
     """Delete the given file, this is is a simpler version of the update_file function
 
     Arguments:
@@ -361,7 +386,7 @@ def delete_file(self, conn: Connection,  file_id:int, owner_id) ->int:
         
         
 
-def get_file(self, conn: Connection,  file_id:int)-> Tuple[bytes, str]:
+def get_file(self:data, conn: Connection,  file_id:int)-> Tuple[bytes, str]:
     """get the binary file for the given id. Doesn't check if user has rights to view the file or not
 
     Arguments:
@@ -391,10 +416,12 @@ def get_file(self, conn: Connection,  file_id:int)-> Tuple[bytes, str]:
     return file, name
 
 
-def insert_file_log(self, conn: Connection,  file_ids:list, user_id:int, type:str):
+def insert_file_log(self:data, conn: Connection,  file_ids:list, user_id:int, type:str):
     if not file_ids:
         return
-    insert_dics = [{self.file_log.c.user_id: user_id, self.file_log.c.type:type, self.file_log.c.file_id: file_id} for file_id in file_ids]
+    insert_dics = [{self.file_log.c.user_id: user_id, self.file_log.c.type:type, self.file_log.c.file_id: file_id} for file_id in file_ids if file_id is not None]
+    if not insert_dics:
+        return
     sql = self.file_log.insert().values(insert_dics)
     with conn.begin():
         self.logger.info("Inserting to file log ids: [%s] - (type) %s - (user) %s", ", ".join(str(x) for x in file_ids), type, user_id)

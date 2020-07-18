@@ -10,6 +10,7 @@ import datetime
 from flask import render_template, redirect, url_for, request
 import os 
 from flask_login import login_user, logout_user, login_required, current_user
+from application.domain.assignment import Assignment, Task
 from application import db
 class TaskForm(FlaskForm):
     task_files = MultipleFileField(label="Tehtävän aineistoja") 
@@ -83,19 +84,23 @@ def new_assignment(course_id):
             if not check_file(file):  
                 app.logger.info("File max size reached")    
                 return render_template("/teacher/assignment/new.html", id = course_id, form = form, reveal_error = "Ainakin yhden lataamasi tiedoston koko oli liian suuri (max 50 Mb)")
-        i+=1    
-    app.logger.info("attempting insert")
-    assig_id = db.insert_assignment(g.conn, current_user.get_id(), course_id,form.name.data ,deadline , reveal , files)
-    app.logger.info("insert successfull")
-    i =0
+        i+=1
+    tasks = []
+    i=0
     for task in form.tasks.data:
         
         files = request.files.getlist("tasks-"+str(i)+"-task_files")
         
         
         app.logger.info("inserting tasks")
-        db.insert_task(g.conn, current_user.get_id(),i+1, assig_id, task.get("brief"), task.get("points"), files)
+        tasks.append(Task(None, i+1, task.get("points"), task.get("brief"),files=files))
+        
         i+=1
+    app.logger.info("attempting insert")
+    db.insert_assignment(g.conn, current_user.get_id(), course_id,form.name.data ,deadline , reveal , files, tasks=[])
+    app.logger.info("insert successfull")
+    
+    
     app.logger.info("Everthing inserted! Assignment inserted")
     return redirect(url_for("index"))
 

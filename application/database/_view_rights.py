@@ -1,4 +1,4 @@
-
+from __future__ import annotations
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 from datetime import datetime
@@ -7,9 +7,13 @@ from sqlalchemy.engine import Connection
 from werkzeug.utils import secure_filename
 from application.domain.assignment import File
 from typing import List, Tuple
+from typing import List, TYPE_CHECKING
+from .data import utcnow
 
+if TYPE_CHECKING:
+    from .data import data
 
-def check_access_rights(self, conn: Connection,  user_id:int, role:str, course_id, assignment_id = None, task_id = None) -> bool:
+def check_access_rights(self:data, conn: Connection,  user_id:int, role:str, course_id, assignment_id = None, task_id = None) -> bool:
     """Checks if the given user has rights to view selected elements. If multiple are given, checks for all
     currently task_id doesn't check for anything (can be expanded later, if needed)
 
@@ -61,7 +65,7 @@ def check_access_rights(self, conn: Connection,  user_id:int, role:str, course_i
             
 
         if assignment_id is not None and role=="USER": #if role is teacher, we have checked the teacher owns this course
-            sql = select([self.assignment.c.id]).where((self.assignment.c.id == assignment_id) & (self.assignment.c.reveal <= func.now()) )
+            sql = select([self.assignment.c.id]).where((self.assignment.c.id == assignment_id) & (self.assignment.c.reveal <= utcnow()) )
             row = conn.execute(sql).first()
             if row is None:
                 self.logger.warning("FAILURE, assignment id is invalid, or the assignment is not revealed")

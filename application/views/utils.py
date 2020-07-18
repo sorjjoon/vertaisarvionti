@@ -23,6 +23,8 @@ from application import db
         #             return previous
 @app.context_processor
 def utility_processor():
+    
+
     def get_file_extension(file_name):
         try:
             extension = file_name[file_name.rindex(".")+1:]
@@ -134,7 +136,7 @@ def validate_user_access():
     user_id = current_user.get_id()
     role = current_user.role
     app.logger.info("User %s attempted access to %s", user_id, url)
-    if "overview" in url:
+    if "/overview" in url:
         if role != "TEACHER":
             app.logger.warning("User %s attempted to access view without privilages", current_user)
             return redirect(url_for("index"))

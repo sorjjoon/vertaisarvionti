@@ -1,10 +1,10 @@
 import datetime
 import pytz
 class Course():
-    def __init__(self, name, description, end_date:datetime.datetime, code=None, id=None, assignments = [], min=None, time_zone = "UTC", teacher_id = None, student_count = 0, teacher_name = "", abbreviation=None):
+    def __init__(self, name, description, code=None, id=None, assignments = [], min=None, time_zone = "UTC", teacher_id = None, student_count = 0, teacher_name = "", abbreviation=None):
         self.name=name
         self.description=description
-        self.end_date=end_date
+        
         self.code = code
         self.id = id
         self.assignments = assignments
@@ -20,12 +20,16 @@ class Course():
             if self.name == other.name:
                 if self.description == other.description:
                     if self.id == other.id:
-                        return True
-
-
+                        if self.abbreviation == other.abbreviation:
+                            if self.teacher_name == other.teacher_name:
+                                return True
         return False
+
+    def __repr__(self):
+        return str(self)
+        
     def __str__(self):
-        return "id: "+str(self.id)+"name: "+self.name+ "description "+self.description+ "end date"+str(self.end_date)+"code, "+self.code+", teacher id: "+str(self.teacher_id)
+        return "id: "+str(self.id)+" name: "+str(self.name)+ " description "+str(self.description)+" code, "+str(self.code)+", teacher id: "+str(self.teacher_id)+", abbreviation: "+str(self.abbreviation)+", teacher_name "+str(self.teacher_name)
 
     def divide_assignment(self):
         self.past = []

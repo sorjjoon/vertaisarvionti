@@ -11,7 +11,15 @@ from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
 from sqlalchemy.sql import func
 from sqlalchemy import CheckConstraint
 import logging
+from sqlalchemy.sql import expression
+from sqlalchemy.ext.compiler import compiles
 
+class utcnow(expression.FunctionElement):
+    type = DateTime()
+
+@compiles(utcnow, 'postgresql')
+def pg_utcnow(element, compiler, **kw):
+    return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
 
 class data():
     def __init__(self, used_engine: engine, create=True, log_format=None):
@@ -54,21 +62,21 @@ class data():
         """
         self.logger.info("defining tables")
 
-        if not os.environ.get("HEROKU"):
+        if not os.environ.get("DATABASE_URL"):
             # sqlite doesn't enforce foreign keys by default, turning them on to enforce cascade
             def _fk_pragma_on_connect(dbapi_con, con_record):
                 dbapi_con.execute('pragma foreign_keys=ON')
 
             from sqlalchemy import event
             event.listen(used_engine, 'connect', _fk_pragma_on_connect)
-
+        
         metadata = MetaData(bind=used_engine)
         self.account = Table('account', metadata,
                              Column("id", Integer, primary_key=True),
                              Column("role_id", Integer,  ForeignKey(
                                  "role.id", ondelete="CASCADE"), nullable=False),
-                             Column("creation date", DateTime, nullable=False,
-                                    server_default=func.now()),
+                             Column("creation_date", DateTime, nullable=False,
+                                    server_default=utcnow()),
                              Column("username", String(144),
                                     nullable=False, unique=True),
                              Column("salt", String(144), nullable=False),
@@ -86,15 +94,15 @@ class data():
         self.course = Table("course", metadata,
                             Column("id", Integer, primary_key=True),
                             Column("abbreviation", String(
-                                144), nullable=False),
+                                8), nullable=False),
                             Column("teacher_id", Integer, ForeignKey(
                                 "account.id", ondelete="CASCADE"), index=True, nullable=False),
-                            Column("name", String(144), nullable=False),
-                            Column("description", String(144)),
-                            Column("code", String(8), nullable=False),
-                            Column("end_date", Date),
+                            Column("name", String(50), nullable=False),
+                            Column("description", String(500)),
+                            Column("code", String(8), nullable=False, unique=True),
+
                             Column("creation_date", DateTime, nullable=False,
-                                   server_default=func.now())
+                                   server_default=utcnow())
                             )
         self.course_student = Table("course_student", metadata,
                                     Column("student_id", Integer, ForeignKey(
@@ -102,16 +110,17 @@ class data():
                                     Column("course_id", Integer, ForeignKey(
                                         "course.id", ondelete="CASCADE"), nullable=False, primary_key=True),
                                     Column(
-                                        "timestamp", DateTime, nullable=False, server_default=func.now())
+                                        "timestamp", DateTime, nullable=False, server_default=utcnow())
                                     )
 
         self.assignment = Table("assignment", metadata,
                                 Column("id", Integer, primary_key=True),
-                                Column("name", String(500), nullable=False),
+                                Column("name", String(144), nullable=False),
+                                Column("description", String(500) ),
                                 Column("course_id", Integer, ForeignKey(
                                     "course.id", ondelete="CASCADE"), nullable=False),
                                 Column("reveal", DateTime,
-                                       server_default=func.now(), nullable=False),
+                                       server_default=utcnow(), nullable=False),
                                 Column("deadline", DateTime)
                                 )
 
@@ -130,33 +139,34 @@ class data():
                           Column("owner_id", Integer,  ForeignKey(
                               "account.id", ondelete="CASCADE"), nullable=False),
                           Column("upload_date", DateTime, nullable=False,
-                                 server_default=func.now()),
+                                 server_default=utcnow()),
                           Column("binary_file", LargeBinary()),
                           Column("submit_id", Integer, ForeignKey(
-                              "submit.id", ondelete="CASCADE"), index=True),
+                              "submit.id", ondelete="CASCADE")),
                           Column("answer_id", Integer, ForeignKey(
-                              "answer.id", ondelete="CASCADE"), index=True),
+                              "answer.id", ondelete="CASCADE")),
                           Column("task_id", Integer, ForeignKey(
-                              "task.id", ondelete="CASCADE"), index=True),
+                              "task.id", ondelete="CASCADE")),
                           Column("feedback_id", Integer, ForeignKey(
-                              "feedback.id", ondelete="CASCADE"), index=True),
+                              "feedback.id", ondelete="CASCADE")),
                           Column("assignment_id", Integer, ForeignKey(
-                              "assignment.id", ondelete="CASCADE"), index=True),
+                              "assignment.id", ondelete="CASCADE")),
+                          Column("comment_id", Integer, ForeignKey(
+                              "comment.id", ondelete="CASCADE")),
                           CheckConstraint("""
         (CASE WHEN answer_id IS NULL THEN 0 ELSE 1 END + 
         CASE WHEN submit_id IS NULL THEN 0 ELSE 1 END + 
         CASE WHEN task_id IS NULL THEN 0 ELSE 1 END + 
         CASE WHEN feedback_id IS NULL THEN 0 ELSE 1 END +
+        CASE WHEN comment_id IS NULL THEN 0 ELSE 1 END +
         CASE WHEN assignment_id IS NULL THEN 0 ELSE 1 END) 
-        = 1""", name='null file foreign keys')
-
-
+        = 1""", name='null_file_foreign_keys')
                           )
 
         self.answer = Table("answer", metadata,
                             Column("id", Integer, primary_key=True),
                             Column("reveal", DateTime,
-                                   server_default=func.now(), nullable=False),
+                                   server_default=utcnow(), nullable=False),
                             Column("description", String(500)),
                             Column("task_id", Integer, ForeignKey(
                                 "task.id", ondelete="CASCADE"), unique=True, nullable=False),
@@ -169,7 +179,7 @@ class data():
                                 "task.id", ondelete="CASCADE"), index=True, nullable=False),
 
                             Column("last_update", DateTime, nullable=False,
-                                   server_default=func.now()),
+                                   server_default=utcnow()),
 
                             Column("owner_id", Integer, ForeignKey("account.id", ondelete="CASCADE"), index=True, nullable=False))
 
@@ -177,12 +187,12 @@ class data():
                               Column("id", Integer, primary_key=True),
                               Column("points", Integer, nullable=False),
                               Column("timestamp", DateTime, nullable=False,
-                                     server_default=func.now()),
+                                     server_default=utcnow()),
                               Column("modified", DateTime),
                               Column("description", String(500)),
                               Column("owner_id", Integer, ForeignKey(
                                   "account.id"), nullable=False),
-                              Column("visible", Boolean, nullable=False),
+                              Column("reveal", DateTime, nullable=False),
                               Column("submit_id", Integer, ForeignKey("submit.id", ondelete="CASCADE"), index=True, nullable=False))
 
         self.comment = Table("comment", metadata,
@@ -192,27 +202,31 @@ class data():
                              Column("modified", DateTime),
                              Column("user_id", Integer, ForeignKey(
                                  "account.id"), nullable=False),
-                             Column("visible", Boolean, nullable=False),
+                             Column("reveal", DateTime, nullable=False,
+                                    server_default=utcnow()),
                              Column("timestamp", DateTime, nullable=False,
-                                    server_default=func.now()),
+                                    server_default=utcnow()),
                              Column("submit_id", Integer, ForeignKey(
-                                 "submit.id", ondelete="CASCADE"), index=True),
+                                 "submit.id", ondelete="CASCADE")),
+                                 Column("course_id", Integer, ForeignKey(
+                                 "course.id", ondelete="CASCADE")),
                              Column("answer_id", Integer, ForeignKey(
-                                 "answer.id", ondelete="CASCADE"), index=True),
+                                 "answer.id", ondelete="CASCADE")),
                              Column("task_id", Integer, ForeignKey(
-                                 "task.id", ondelete="CASCADE"), index=True),
+                                 "task.id", ondelete="CASCADE")),
+                            
                              Column("assignment_id", Integer, ForeignKey(
-                                 "assignment.id", ondelete="CASCADE"), index=True),
+                                 "assignment.id", ondelete="CASCADE")),
                              Column("feedback_id", Integer, ForeignKey(
-                                 "feedback.id", ondelete="CASCADE"), index=True),
+                                 "feedback.id", ondelete="CASCADE")),
                              CheckConstraint("""
         (CASE WHEN answer_id IS NULL THEN 0 ELSE 1 END + 
         CASE WHEN submit_id IS NULL THEN 0 ELSE 1 END + 
         CASE WHEN task_id IS NULL THEN 0 ELSE 1 END + 
+        CASE WHEN course_id IS NULL THEN 0 ELSE 1 END +
         CASE WHEN feedback_id IS NULL THEN 0 ELSE 1 END +
         CASE WHEN assignment_id IS NULL THEN 0 ELSE 1 END) 
-        = 1""", name='null comment foreign keys')
-
+        = 1""", name='null_comment_foreign_keys')
                              )
 
         self.peer = Table("peer", metadata,
@@ -229,6 +243,8 @@ class data():
 
 
                           )
+
+
         self.file_log = Table("file_log", metadata,
                               Column("type", String(50), nullable=False),
                               Column("file_id", Integer,
@@ -236,44 +252,45 @@ class data():
                               Column("user_id", Integer, ForeignKey(
                                   "account.id"), nullable=False),
                               Column("timestamp", DateTime, nullable=False,
-                                     server_default=func.now()),
-
-
-
+                                     server_default=utcnow())
                               )
 
         self.engine = used_engine
-        if create:
-            self.logger.info("attempting create all")
-            metadata.create_all()  # checks if table exsists first
+          # checks if table exsists first
+            
 
         # insert 1 admin user, and roles "USER" and "ADMIN to the database (if they don't exsist)"
-            with self.engine.connect() as conn:
-                with conn.begin():
-                    sql = self.role.insert().values(name="USER", id=1)
+        with self.engine.connect() as conn:
+            if create:
+                trans = conn.begin()
+                self.logger.info("attempting create all")
+                
+                try:
+                    metadata.create_all(bind=conn)
+                    trans.commit()
+                except Exception as r:
+                    
+                    self.logger.error("Create all failed", exc_info=True)
+                    trans.rollback()
+                    raise r
+                    
+                self.logger.info("Create all success!")
 
-                    # catches unqiue contraint fail
-                    try:
+            else:
+                self.logger.info("Not creating tables")
 
-                        conn.execute(sql)
-                        self.logger.info("user role inserted")
-                    except:
-                        pass
-                    sql = self.role.insert().values(name="ADMIN", id=2)
-                    try:
-                        conn.execute(sql)
-                        self.logger.info("admin role inserted")
-
-                    except:
-                        pass
-
-                    sql = self.role.insert().values(name="TEACHER", id=3)
-                    try:
-                        conn.execute(sql)
-                        self.logger.info("admin role inserted")
-
-                    except:
-                        pass
+            with conn.begin():
+                from sqlalchemy.dialects.postgresql import insert
+                self.logger.info("Inserting account roles")
+                dics=[dict(name="USER"), dict(name="TEACHER"), dict(name="ADMIN")]
+                sql = insert(self.role).values(dics).returning(self.role.c.name).on_conflict_do_nothing(constraint="role_unique")
+                rs = conn.execute(sql)
+            rows = rs.fetchall()
+            names = [i[0] for i in rows]
+            self.logger.info("%s roles inserted", names)
+                
+                
+                
 
     @staticmethod
     def drop_all(engine, tables=None):
@@ -282,12 +299,14 @@ class data():
         meta.reflect(only=tables)
         if tables:
             raise NotImplementedError("TODO")
-        meta.drop_all()
+        with engine.connect() as conn:
+            with conn.begin():
+                meta.drop_all(bind=conn)
 
-    from ._user_service import delete_user, get_user_by_id, check_user, update_username
+    from ._user_service import delete_user, get_user_by_id, check_user, update_user
     from ._user_auth import get_user, hash_password, insert_user, update_password, get_role_id
-    from ._course_service import insert_course, select_courses_teacher, select_courses_student, enlist_student, select_students, select_course_details, set_assignments
-    from ._assignment_service import insert_assignment, insert_task, select_assignment, set_submits, get_next_assignment, get_assignments_in_time
+    from ._course_service import insert_course, select_courses_teacher, select_courses_student, enlist_student, select_students, select_course_details, set_assignments, update_course
+    from ._assignment_service import insert_assignment, _insert_task, select_assignment, set_submits, get_assignments_in_time
     from ._file_service import select_file_details, get_file, update_file, insert_file_log, insert_files, check_user_view_rights, check_user_delete_rights
     from ._submit_service import update_submit, select_submits, get_simple_submit
     from ._teacher_stats import count_students

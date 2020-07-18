@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 from typing import List
 from sqlalchemy.engine import Connection
@@ -6,12 +7,15 @@ from sqlalchemy import func
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 from werkzeug.utils import secure_filename
-
+from .data import utcnow
 from application.domain.assignment import (Answer, Assignment, File, Submit,
                                            Task)
+from typing import List, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .data import data
 
-def set_task_answer(self, conn: Connection,  task: Task, for_student=True) -> None:
+def set_task_answer(self:data, conn: Connection,  task: Task, for_student=True) -> None:
     """Set the given task objects answer to match the database
     For a task with no answer, answer set to null
 
@@ -27,7 +31,7 @@ def set_task_answer(self, conn: Connection,  task: Task, for_student=True) -> No
     sql = select([self.file.c.id, self.file.c.name, self.file.c.upload_date, self.answer]
                  ).select_from(j).where(self.answer.c.task_id == task.id)
     if for_student:
-        sql = sql.where(self.answer.c.reveal < func.now())
+        sql = sql.where(self.answer.c.reveal < utcnow())
     #First row gives answer details, other give extra files   
     task.answer = None
     with conn.begin():
@@ -57,7 +61,7 @@ def set_task_answer(self, conn: Connection,  task: Task, for_student=True) -> No
         
         
 
-def update_answer(self, conn: Connection,  user_id: int, task_id: int, files: List[File], description: str, files_to_delete=None, reveal: datetime.datetime = pytz.utc.localize(datetime.datetime.utcnow())) -> int:
+def update_answer(self:data, conn: Connection,  user_id: int, task_id: int, files: List[File], description: str, files_to_delete=None, reveal: datetime.datetime = pytz.utc.localize(datetime.datetime.utcnow())) -> int:
     """Update the database answer to match. If no answer was submitted, a new one is created. If one is found, it is replaced
         Doesn't check if the user has rights to update the answer
     Arguments:

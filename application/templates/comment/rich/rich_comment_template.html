@@ -1,0 +1,24 @@
+{% if allow_new_comment %}
+<div class="container comment_container  add_border">
+    <div class="row">
+        <textarea rows="3" id="comment_text" class="rich_text" required placeholder="Lisää kommentti..."></textarea>
+    </div>
+    <div class="row mt-1">
+        <div class="col">
+            <div>
+                <input class="btn btn-light pull-left" id="send_comment" type="submit" value="Lähetä">
+                <input id="comment_target" type="hidden" value="{{ comment_target }}">
+
+
+                <p id="comment_submit_status" class="ml-4 smaller_font"> <small></small></p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endif %}
+
+
+{% block comment_script %}
+
+{% endblock %}

@@ -1,0 +1,40 @@
+.comment_container {
+    display: inline-block;
+    width: 500px;
+    
+ }
+ 
+ #comment_text {
+    width: 100%;
+ }
+ 
+ #comment_submit_status {
+    display: inline;
+    
+ }
+
+ .comment {
+    border:1px solid #333;
+ }
+ .comment hr {
+    border: none;
+    height: 0.5px;
+    margin-top: 0rem;
+    color: #333;
+    background-color: #333; 
+ }
+ .comment_table {
+    table-layout: fixed;
+    word-wrap: break-word;
+ }
+ 
+ .comment_table  #header{
+    width: 10%;
+ }
+ 
+ .comment_table  #header b{
+    font-size: 10px;
+ }
+ .comment_table  #comment_text{
+    width: 90%;
+ }

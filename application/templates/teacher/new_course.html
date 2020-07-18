@@ -1,31 +1,43 @@
 {% extends "layout.html" %}
 {% block styles %}
 {{super()}}
+
 {% endblock %}
 
 
 {% block body %}
 <div id="new_course_wrapper" class="wrapper ">
-  <form class="add_border pb-4 pt-4 pl-4 pr-4" method="POST" action="{{ url_for('new_course') }}">
+  
+  <form id="new_course_form" class="add_border pb-4 pt-4 pl-4 pr-4" method="POST" action="{{ url_for('new_course') }}">
+  <div class="form-group">
+    {{form.name.label}}
     
-  <div class="form-group">
-    <label for="course_name_input">Kurssin nimi</label>
-    <input type="text" class="form-control" id="course_name_input"  name="course_name" >
-    {% if name_error %}
-    <small id="short_clear" class="form-text text-danger">{{name_error}}</small>
-    {% endif %}
-  </div>
-  <div class="form-group">
-    <label for="course_short">Kurssin lyhenne</label>
-    <input type="text" class="form-control" id="course_short" aria-describedby="short_clear" placeholder="3-7 merkkiä" maxlength="7" name="course_short">
-    {% if short_error %}
-    <small id="short_clear" class="form-text text-danger">{{short_error}}</small>
+    {{form.name(class="form-control")}}
+    
+    {% for error in form.name.errors %}
+    <small id="short_clear" class="form-text text-danger">{{error}}</small>
+    {% endfor %}
+    {{form.abbreviation.label}}
+    
+    {{form.abbreviation(class="form-control",placeholder="2-8 merkkiä", maxlength="8")}}
+    {% if form.abbreviation.errors %}
+    {% for error in form.abbreviation.errors %}
+    <small id="short_clear" class="form-text text-danger">{{error}}</small>
+    {% endfor %}
     {% else %}
-    <small id="short_clear" class="form-text text-muted">Esim. MAB3</small>
+    <small id="short_clear" class="form-text text-muted" style="word-wrap: normal;">Esim. MAB3, käytetään kurssin lyhenteenä etusivulla</small>
     {% endif %}
+    
+    {{form.description.label}}
+    
+    {{form.description(class="form-control", placeholder="Vapaaehtoinen")}}
+    {% if description_error is defined %}
+    <small id="short_clear" class="form-text text-danger">{{description_error}}</small>
+    {% endif %}
+    <input class="mt-4" type="submit" value="Luo kurssi">
   </div>
-  <input type="submit" value="Luo kurssi">
 </form>
+
 
 </div>
 

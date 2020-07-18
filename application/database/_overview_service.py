@@ -1,3 +1,4 @@
+from __future__ import annotations
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, select, update, func)
 
@@ -7,7 +8,15 @@ from sqlalchemy.engine import Connection
 from application.domain.assignment import Assignment, Task, Submit, Feedback
 from collections import namedtuple
 import pytz
-def get_course_task_stats(self, conn: Connection,  course_id:int) -> (dict,dict):
+from .data import utcnow
+from typing import List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .data import data
+
+
+
+def get_course_task_stats(self:data, conn: Connection,  course_id:int) -> (dict,dict):
     """[Return all task feedback for users]
 
     Args:
@@ -51,7 +60,7 @@ def get_course_task_stats(self, conn: Connection,  course_id:int) -> (dict,dict)
 
             
 
-def get_all_submits(self, conn: Connection,  assignment_id:int, task_id:int=None, convert_to_timezone = None, join_feedback = False) -> dict:
+def get_all_submits(self:data, conn: Connection,  assignment_id:int, task_id:int=None, convert_to_timezone = None, join_feedback = False) -> dict:
     """get all submits involved in the given params. If task_ id is not given, gets all assignment tasks
 
     Arguments:
@@ -117,7 +126,7 @@ def get_all_submits(self, conn: Connection,  assignment_id:int, task_id:int=None
 
 
 
-def get_first_downloads(self, conn: Connection,  file_ids:list, user_ids:list = None) -> dict:
+def get_first_downloads(self:data, conn: Connection,  file_ids:list, user_ids:list = None) -> dict:
     """First downloads for the given ids
         Given times are UTC and not naive
 
@@ -132,7 +141,7 @@ def get_first_downloads(self, conn: Connection,  file_ids:list, user_ids:list = 
     sql = select([self.file_log.c.user_id, self.file_log.c.log_id, func.min(self.file_log.c.timestamp).label("time_min")]).where(self.file_log.c.file_id.in_(file_ids))
     sql = sql.where(self.file_log.c.type == "download")
     
-    if user_id is not None:
+    if user_ids is not None:
         sql = sql.where(self.file_log.c.user_id.in_(user_ids))
     else:
         sql = sql.group_by(self.file_log.c.user_id, self.file_log.c.log_id)

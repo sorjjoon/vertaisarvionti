@@ -127,11 +127,14 @@ class Assignment():
             task.set_timezones(time_zone)
 
     def __repr__(self):
-        return str(self)
+        return ", ".join(["id: ", self.id,  "files: ", self.files, "answer: "])
 
 class Task():
     def __init__(self, id, number, points, description , files=[], assignment_id=None, time_zone = "UTC", done:bool = False, answer = None):
-        self.id = int(id)
+        if id is not None:
+            self.id = int(id)
+        else:
+            self.id = None
         self.number = number
         self.description = description
         self.points = points
@@ -149,11 +152,10 @@ class Task():
 
     def set_timezones(self, time_zone:str):
         for file in self.files:
-            if not file:
+            if not file or not isinstance(file, File):
                 continue
             file.set_timezones(time_zone)
-            if self.answer:
-                self.answer.set_timezones(time_zone)
+            
         if self.answer:
             self.answer.set_timezones(time_zone)
                 
@@ -169,7 +171,9 @@ class Task():
         return ", ".join(attr_list)
 
     def __repr__(self):
-        return str(self)
+        
+        return ", ".join(["id: ", str(self.id),"assig_id: ", str(self.assignment_id) ,"number: ", str(self.number), "descrip: ", str(self.description), "points: ", str(self.points), "files: ", str(self.files), "answer: ", str(self.answer)])
+        
 
 class Answer():
     def __init__(self, id:int, description: str, reveal:datetime.datetime, files:list, time_zone = "UTC"):

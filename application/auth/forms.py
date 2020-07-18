@@ -7,34 +7,27 @@ from wtforms import StringField, PasswordField, validators, ValidationError, Boo
 from wtforms.widgets import PasswordInput
 from flask_login import login_user, logout_user, login_required, current_user
 from application.auth import account
-
+from sqlalchemy.exc import IntegrityError
 def username_free(form, field):
+    print("checking usernmae")
     if not db.check_user(g.conn, field.data):
+        
         raise ValidationError('Käyttänimi on varattu')
 
 
-class PasswordForm(FlaskForm):  # TODO add old password
-    password1 = PasswordField("New Password", validators=[validators.DataRequired(message=None), validators.Length(
-        min=5, max=50, message="Salasanan täytyy olla 8 - 50 merkkiä pitkä"), validators.EqualTo("password2", message='Salasanat eivät täsmää')])
-    # Only password1 needs to be validated
-    password2 = PasswordField("Confirm Password")
 
-
-class UsernameUpdateForm(FlaskForm):
-    username = StringField("Username", validators=[validators.DataRequired(message=None), validators.Length(
-        min=5, max=30, message="Username must be between 5 and 30 characters"), username_free])
 
 
 class RegisterForm(FlaskForm):
-    username = StringField("Käyttäjänimi", validators=[validators.DataRequired(message=None), validators.Length(
+    username = StringField("Käyttäjänimi", validators=[validators.DataRequired(message="Käyttäjänimen täytyy olla 5 - 30 merkkiä pitkä"), validators.Length(
         min=5, max=30, message="Käyttäjänimen täytyy olla 5 - 30 merkkiä pitkä"), username_free])
-    password = StringField("Salasana", widget=PasswordInput(hide_value=False), validators=[validators.DataRequired(message=None), validators.Length(
+    password = StringField("Salasana", widget=PasswordInput(hide_value=False), validators=[validators.DataRequired(message="Salasanan täytyy olla 8 - 50 merkkiä pitkä"), validators.Length(
         min=8, max=50, message="Salasanan täytyy olla 8 - 50 merkkiä pitkä")])  # TODO password strength
     
     password2 = StringField("Toista salasana", widget=PasswordInput(hide_value=False), validators=[validators.DataRequired(message=None), validators.EqualTo("password", message='Salasanat eivät täsmää')])    
-    first_name =  StringField("Etunimi", validators=[validators.DataRequired(message=None), validators.Length(
+    first_name =  StringField("Etunimi", validators=[validators.DataRequired(message="Etunimi ei voi olla tyhjä"), validators.Length(
         min=1, max=30, message="Etunimi voi olla enintään 30 merkkiä")])
-    last_name =  StringField("Sukunimi", validators=[validators.DataRequired(message=None), validators.Length(
+    last_name =  StringField("Sukunimi", validators=[validators.DataRequired(message="Sukunimi ei voi olla tyhjä"), validators.Length(
         min=1, max=50, message="Sukunimi voi olla enintään 50 merkkiä")])
     student = BooleanField("Olen opiskelija ", default="checked")
 
@@ -47,19 +40,78 @@ class LoginForm(FlaskForm):
     password = PasswordField("Salasana", validators=[validators.DataRequired(message=None)])  # TODO password strength
 
 
-@app.route("/auth/update/username", methods=["GET", "POST"])
-@login_required
-def update_username():
-    if request.method == "GET":
-        return render_template("auth/newpass.html", form=PasswordForm(), username_form=UsernameUpdateForm())
-    form = UsernameUpdateForm(request.form)
 
-    if not form.validate():
-        return render_template("auth/newpass.html", form=PasswordForm(), username_form=form)
+@app.route("/user/", methods = ["GET", "POST"])
+@login_required
+def user_details():
+    if request.method == "GET":
+        return render_template("auth/user_details.html", form=RegisterForm())
     else:
-        db.update_username(g.conn, form.username.data, current_user.get_id())
-        logout_user()
-        return redirect(url_for("index"))
+        form = RegisterForm(request.form)
+        errors = []
+        
+        if request.form.get("details"):
+            app.logger.info("updating details for user %s", current_user.get_id())
+            
+
+            new_username = form.username.data
+            new_values = {}
+            if new_username != current_user.name:
+                app.logger.info("Updating username")
+                if not form.username.validate(form):
+                    errors+=form.username.errors
+                else:
+                    new_values["username"]=new_username
+            
+            if form.first_name.data != current_user.first_name:
+                app.logger.info("Updating firstname")
+                if not form.first_name.validate(form):
+                    
+                    errors+=form.first_name.errors
+                else:
+                    new_values["first_name"]=form.first_name.data
+
+            if form.last_name.data != current_user.last_name:
+                app.logger.info("Updating lastname")
+                if not form.last_name.validate(form):
+                    errors += form.last_name.errors
+                else:
+                    new_values["last_name"]=form.last_name.data
+
+            if errors:
+                app.logger.info("invalid user input, errors %s", errors)
+                return render_template("auth/user_details.html", errors=errors, form=form)
+            else:
+                app.logger.info("attempting to update user details, new details %s", new_values)
+                try:
+                    db.update_user(g.conn, current_user.get_id(), **new_values)
+                    app.logger.info("update success!")
+                    
+                except IntegrityError as _:
+                    app.logger.warning("username taken, this shouldn't happen since we validate username to be free", exc_info=True)
+                    errors.append("Käyttäjänimi on varattu")
+                    return render_template("auth/user_details.html", errors=errors, form=form)
+        elif request.form.get("update_password"):
+            app.logger.info("updating password for user %s", current_user.get_id())
+
+            if form.password.validate(form) and form.password2.validate(form):
+                db.update_password(g.conn, current_user.get_id(), form.password.data)
+                
+                app.logger.info("password for user %s updated!", current_user.get_id())
+                logout_user()
+            else:
+                errors+=form.password.errors
+                errors+=form.password2.errors
+                return render_template("auth/user_details.html", password_errors=errors, form=form)
+
+
+
+        else: #this should only happen, if user took name tag from submit button for some reason
+
+            pass
+    return redirect(url_for("user_details"))
+        
+
 
 
 @app.route("/auth/register", methods=["GET", "POST"])
@@ -94,7 +146,7 @@ def login_auth():
 
     user = db.get_user(g.conn, form.username.data, form.password.data)
     if user is None:
-        return render_template("auth/login.html", form=form, error="No such username or password"), 401
+        return render_template("auth/login.html", form=form, error="Käyttäjänimi tai salasana on väärin"), 401
 
     login_user(user)
     app.logger.info("User " + form.username.data + " validated")
@@ -106,19 +158,4 @@ def login_auth():
     return redirect(url_for("index"))
 
 
-@app.route("/user", methods=["GET", "POST"])
-@login_required
-def update_password():
 
-    if request.method == "GET":
-        return render_template("auth/newpass.html", form=PasswordForm(), username_form=UsernameUpdateForm())
-    form = PasswordForm(request.form)
-    if form.validate():
-        # Doesn't matter if we use 1 or 2 (since we have validated them to be same)
-        new_pass = request.form.get("password1")
-        db.update_password(g.conn, current_user.get_id(), new_pass)
-        logout_user()
-        return redirect(url_for("index"))
-
-    else:
-        return render_template("auth/newpass.html", form=form)

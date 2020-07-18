@@ -1,3 +1,4 @@
+from __future__ import annotations
 from hashlib import scrypt
 from secrets import token_hex
 
@@ -5,11 +6,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import delete, insert, join, select, update
 from sqlalchemy.engine import Connection
 from application.auth.account import account
-
+from .data import utcnow
 # see documentation for queries / param explanations
+from typing import List, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .data import data
 
-def get_user(self, conn: Connection,  username: str, password: str) -> account:
+def get_user(self:data, conn: Connection,  username: str, password: str) -> account:
     """Get the account object for given username and password (function handles salting)
 
     Arguments:
@@ -37,7 +41,7 @@ def get_user(self, conn: Connection,  username: str, password: str) -> account:
             return None
 
 
-def get_role_id(self, conn: Connection,  role:str) -> id:
+def get_role_id(self:data, conn: Connection,  role:str) -> id:
     """[Return the role_id for given role name. ]
 
     Arguments:
@@ -52,7 +56,7 @@ def get_role_id(self, conn: Connection,  role:str) -> id:
         return rs.fetchone()[self.role.c.id]
 
 
-def insert_user(self, conn: Connection,  username: str, password: str, first_name:str, last_name:str, role:str="USER") -> None:
+def insert_user(self:data, conn: Connection,  username: str, password: str, first_name:str, last_name:str, role:str="USER") -> None:
     """Insert the given user in the database (also generates new salt) Raises Integrity error in case duplicate username
 
     Arguments:
@@ -80,7 +84,7 @@ def insert_user(self, conn: Connection,  username: str, password: str, first_nam
             raise r
 
 
-def hash_password(self, conn: Connection,  password:str, username:str=None, user_id:int=None) -> str:
+def hash_password(self:data, conn: Connection,  password:str, username:str=None, user_id:int=None) -> str:
     """Get the password for the given password, fetches salt matching username or user_id
         if both are null, returns None
     Arguments:
@@ -113,7 +117,7 @@ def hash_password(self, conn: Connection,  password:str, username:str=None, user
         return hash_password_salt(password, salt)
 
 
-def update_password(self, conn: Connection,  user_id: int, new_password: str):
+def update_password(self:data, conn: Connection,  user_id: int, new_password: str):
     """ update users id to match the given (plain text password) to match users salt hash. Users authroity to do this should be checked outside this function
 
     Arguments:

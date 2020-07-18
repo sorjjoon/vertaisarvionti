@@ -1,23 +1,4 @@
 {% extends "layout.html" %} 
 {% block body %}
-<form method="POST" action="{{ url_for('enlist_course') }}">
-    <table>
-        <tr>
-            <td>
-                <input type="text" name=code class="form-control" placeholder="kurssi koodi" required>   
 
-            </td>
-
-        </tr>
-      <tr>  
-          <td>
-    <input type="submit" value="Lisää minut kurssille" />
-</td>
-<td>
-    {% if error is defined %}
-    {{error}}
-    {% endif %}
-</td>
-</tr>
-</form>
 {% endblock %}
