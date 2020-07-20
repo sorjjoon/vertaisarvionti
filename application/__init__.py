@@ -37,7 +37,7 @@ def create_app(config):
     app.logger.info("configuring sqlalchemy")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = dict(isolation_level="READ COMMITTED", connect_args={"options": "-c timezone=utc"})
+    #app.config["SQLALCHEMY_ENGINE_OPTIONS"] = dict(isolation_level="READ COMMITTED", connect_args={"options": "-c timezone=utc"})
 
     if os.environ.get("UNIT_TEST"):
         app.logger.info("unit test detected, echoing sql")
@@ -108,7 +108,6 @@ def create_app(config):
     login_manager.login_view = "login_auth"
     login_manager.login_message = "Ole hyvä ja kirjaudu sisään"
 
-    from application.auth import account
 
     #upload
     app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), "files")

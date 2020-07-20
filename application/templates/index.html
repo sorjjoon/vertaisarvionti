@@ -18,7 +18,7 @@ Kurssini -
 
 {% block body %}
 <div class="row mr-1 ml-1">
-    <div id="index_container" class=" col-xs-12 col-sm-12 col-md-8 col-lg-9 col-xl-9">
+    <div id="index_container" class=" col-xs-12 col-sm-12 col-md-12 col-lg-8 col-xl-9">
         <div id="signup_container" class="add_border ">
             <header>
 
@@ -42,7 +42,7 @@ Kurssini -
                 {% endfor %}
                 {% else %}
                 {% if current_user.role == "USER" %}
-                <h6> Et ole vielä ilmoittautunut kursseille (voit rekisteröityä kursseille oikeasta yläkulmasta)
+                <h6> Et ole vielä ilmoittautunut kursseille 
                 </h6>
                 {% else %}
                 <h6> Et ole vielä luonut kursseja (voit luoda uuden kurssin oikeasta yläkulmasta) </h6>
@@ -55,7 +55,7 @@ Kurssini -
         </div>
     </div>
 
-    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-3 col-xl-3">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-4 col-xl-3">
         <div id="timeline_container" class="container add_border">
             <header>
                 <h5>

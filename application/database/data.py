@@ -9,8 +9,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, select, update)
 from sqlalchemy.sql import func
-from sqlalchemy import CheckConstraint
+from sqlalchemy import CheckConstraint, text
 import logging
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 
@@ -20,6 +21,11 @@ class utcnow(expression.FunctionElement):
 @compiles(utcnow, 'postgresql')
 def pg_utcnow(element, compiler, **kw):
     return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
+
+@compiles(utcnow, 'sqlite')
+def sqlite_utcnow(element, compiler, **kw):
+    return "CURRENT_TIMESTAMP"
+
 
 class data():
     def __init__(self, used_engine: engine, create=True, log_format=None):
@@ -82,7 +88,9 @@ class data():
                              Column("salt", String(144), nullable=False),
                              Column("password", String(144), nullable=False),
                              Column("first_name", String(144), nullable=False),
-                             Column("last_name", String(144), nullable=False)
+                             Column("last_name", String(144), nullable=False),
+                             Column("locked_until", DateTime),
+                             Column("failed_attempts", Integer, server_default=text("0"), nullable=False)
                              )
 
         self.role = Table("role", metadata,
@@ -256,6 +264,7 @@ class data():
                               )
 
         self.engine = used_engine
+        
           # checks if table exsists first
             
 
@@ -278,16 +287,20 @@ class data():
 
             else:
                 self.logger.info("Not creating tables")
-
-            with conn.begin():
-                from sqlalchemy.dialects.postgresql import insert
-                self.logger.info("Inserting account roles")
-                dics=[dict(name="USER"), dict(name="TEACHER"), dict(name="ADMIN")]
-                sql = insert(self.role).values(dics).returning(self.role.c.name).on_conflict_do_nothing(constraint="role_unique")
-                rs = conn.execute(sql)
-            rows = rs.fetchall()
-            names = [i[0] for i in rows]
-            self.logger.info("%s roles inserted", names)
+            try:
+                with conn.begin():
+                    #from sqlalchemy.dialects.postgresql import insert
+                    from sqlalchemy import insert
+                    self.logger.info("Inserting Account roles")
+                    dics=[dict(name="USER"), dict(name="TEACHER"), dict(name="ADMIN")]
+                    sql = insert(self.role).values(dics)#.returning(self.role.c.name).on_conflict_do_nothing(constraint="role_unique")
+                    
+                    rs = conn.execute(sql)
+                    #rows = rs.fetchall()
+            except IntegrityError:
+                pass
+            #names = [i[0] for i in rows]
+            #self.logger.info("%s roles inserted", names)
                 
                 
                 

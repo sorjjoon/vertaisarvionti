@@ -22,18 +22,20 @@
 </a>
 
 <div id="course_dropdown_menu" class="dropdown-menu" data-display="static" aria-labelledby="course_dropdown">
-    <button onclick="swap()" class="dropdown-item">  Vaihda nimeä</button>
-
+    <button onclick="swapClass('#course_name_header', 'name_change_form', 'd-none')" class="dropdown-item">  Vaihda nimeä</button>
+    <form method="POST" target="{{url_for('deleteks')}}">
+        <input type="submit" class="dropdown-item" value="Poista kurssi" name="delete">
+    </form>
 </div>
 {% endif %}
 </div>
 {% if current_user.role == 'TEACHER' %}
 <div id="name_change_form" class="d-none">
 <form  method="POST" target="{{url_for('update_course', course_id = course.id)}}">
-    <input id="course_name_change type="text" name="name" value="{{course.name}}">
+    <input id="course_name_change" type="text" name="name" value="{{course.name}}">
     <input type="submit" name="course_name">
     </form>
-    <button onclick="swapReverse()" class="dropdown-item">  Peruuta</button>
+    <button onclick="swapClass('#name_change_form', '#course_name_header', 'd-none')" class="dropdown-item"> Peruuta</button>
 </div>
 
 {% endif %}
@@ -108,14 +110,7 @@
 
 {% block comment_script %}
 <script>
-    function swap() {
-        $("#course_name_header").addClass("d-none")
-        $("#name_change_form").removeClass("d-none")
-    }
-    function swapReverse() {
-        $("#name_change_form").addClass("d-none")
-        $("#course_name_header").removeClass("d-none")
-    }
+    
 
 
     $(document).ready(function () {

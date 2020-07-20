@@ -186,7 +186,7 @@ def update_file(self:data, conn: Connection,  user_id:int,files:list, submit_id:
     if submit_id ==assignment_id ==task_id ==answer_id == None:
         raise ValueError("all parameters null for file update")
     
-    sql = self.file.delete().where(self.file.c.owner_id == user_id).returning(self.file.c.id)
+    sql = self.file.delete().where(self.file.c.owner_id == user_id)#.returning(self.file.c.id)
 
     
 
@@ -222,7 +222,8 @@ def update_file(self:data, conn: Connection,  user_id:int,files:list, submit_id:
         count = rs.rowcount
         
         self.logger.info("deletion complete, deleted "+str(count)+" files for user "+str(user_id))
-        rows = rs.fetchall()
+        #rows = rs.fetchall()
+        rows = []
         if rows:
             deleted_ids = [r[0] for r in rows]
             self.insert_file_log(conn, deleted_ids, user_id, "delete")

@@ -4,7 +4,7 @@ from sqlalchemy import func, desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.engine import Connection
 
-from application.auth.account import account
+from application.auth.account import Account
 from application.domain.comment import Comment
 from application.domain.assignment import File
 from datetime import datetime

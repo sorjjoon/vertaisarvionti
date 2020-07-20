@@ -245,7 +245,7 @@ input.larger_checkbox {
 
 #course_container {
    width: 32.2%;
-   min-width: 220px;
+   min-width: 280px;
    color: inherit;
    text-decoration: inherit; 
    margin-right: 0.5%;
@@ -294,7 +294,7 @@ input.larger_checkbox {
 }
 
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
    #index_container .col-md-4, .col-lg-3, .col-xl-3 {
       margin-top: 2rem;
    }
@@ -360,8 +360,12 @@ padding: 0.2em 0% 0 0;
 }
 
 #course_short {
-   max-width: 110px;
+   max-width: 125px;
 }
+#short_clear {
+   font-size: 70%;
+}
+
 #course_list_container {
    padding-left: 2.5%; 
    padding-right: 2.5%;
@@ -389,7 +393,16 @@ padding: 0.2em 0% 0 0;
 #new_course_form {
    max-width: 550px;
  }
+ #new_course_form div * {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    
+ }
 
+ #new_course_form div label {
+    margin-top: 0.1rem;
+    margin-bottom: 0;
+ }
  #settings_icon {
     width: 22px;
     height: 22px;

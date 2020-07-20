@@ -1,17 +1,19 @@
 from flask import render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField
-
+from datetime import datetime
 # Account contains only relevant information for the application
 
 
-class account:
-    def __init__(self, id, name, role, first_name, last_name):
+class Account:
+    def __init__(self, id, name, role, first_name, last_name, failed_attempts, locked):
         self.id = id
         self.name = name
         self.role = role
         self.first_name=first_name
         self.last_name = last_name
+        self.failed_attempts = failed_attempts
+        self.locked_until = locked
 
     def get_id(self):
         return self.id
@@ -23,7 +25,11 @@ class account:
         return False
 
     def is_authenticated(self):
-        return True
+        if self.locked_until is None or datetime.utcnow() > self.locked_until:
+            return True
+
+        return False
+
 
 
     def get_role(self):

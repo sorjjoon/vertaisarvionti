@@ -124,15 +124,20 @@ def utility_processor():
 @app.before_request
 def validate_user_access():
     g.start = timer()
-    g.conn = db.engine.connect()
+    url = request.path
+    if "/auth" in url:
+        g.conn = db.engine.connect(2)
+    else:
+        g.conn = db.engine.connect()
     
     if not current_user.is_authenticated:
         return None
 
-    url = request.path
     if "static" in url:
         return None
     
+
+
     user_id = current_user.get_id()
     role = current_user.role
     app.logger.info("User %s attempted access to %s", user_id, url)

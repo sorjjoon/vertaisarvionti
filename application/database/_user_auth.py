@@ -1,45 +1,79 @@
 from __future__ import annotations
 from hashlib import scrypt
 from secrets import token_hex
-
+from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import delete, insert, join, select, update
 from sqlalchemy.engine import Connection
-from application.auth.account import account
+from application.auth.account import Account
 from .data import utcnow
 # see documentation for queries / param explanations
 from typing import List, TYPE_CHECKING
-
+import pytz
 if TYPE_CHECKING:
     from .data import data
 
-def get_user(self:data, conn: Connection,  username: str, password: str) -> account:
-    """Get the account object for given username and password (function handles salting)
+class AuthError(Exception):
+    pass
+
+class AccountLockedError(AuthError):
+    def __init__(self, message, locked_until, timezone="utc"):
+        
+        super().__init__(message)
+        self.locked_until = pytz.timezone(timezone).localize(locked_until)
+
+
+
+def get_user(self:data, conn: Connection,  username: str, password: str) -> Account:
+    """Get the Account object for given username and password (function handles salting)
 
     Arguments:
         username {str} -- [username]
         password {str} -- [password]
 
     Returns:
-        account -- [matching user account, None in case username/password invalid]
+        Account -- [matching user Account, None in case username/password invalid]
     """
 
     hashed = self.hash_password(conn, password, username=username)
     j = self.account.join(self.role)
     sql = select([self.account, self.role.c.name]).where(self.account.c.username ==
-                                       username).where(self.account.c.password == hashed).select_from(j)
+                                       username).select_from(j)
     
     with conn.begin():
         result_set = conn.execute(sql)
-        row = result_set.fetchone()
-        result_set.close()
-        if row is not None:
-            self.logger.info("Login for "+username+" success")
-            return account(row[self.account.c.id], row[self.account.c.username], row[self.role.c.name], row[self.account.c.first_name], row[self.account.c.last_name])
-        else:
-            self.logger.info("Login for "+username+" failed")
+        row = result_set.first()
+        if row is None:
+            self.logger.info("Login for "+username+" failed, invalid username")
             return None
 
+        user_id = row[self.account.c.id]
+        locked_until = row[self.account.c.locked_until]
+        
+        
+        if locked_until is not None and locked_until>datetime.utcnow():
+            self.logger.warning("Attempted login for locked user %s", user_id)
+            raise AccountLockedError("Account is locked", locked_until)
+
+        if hashed == row[self.account.c.password]:
+                
+            self.logger.info("Login for "+username+" success")
+            sql = self.account.update().where(self.account.c.id==user_id).values(locked_until=None, failed_attempts=0)
+            conn.execute(sql)
+            return Account(user_id, row[self.account.c.username], row[self.role.c.name], row[self.account.c.first_name], row[self.account.c.last_name], row[self.account.c.failed_attempts], row[self.account.c.locked_until])
+            
+                
+        failed_attempts = row[self.account.c.failed_attempts]+1
+        sql = self.account.update().where(self.account.c.id==user_id).values(failed_attempts=self.account.c.failed_attempts+1)
+        self.logger.info("Login for "+username+" failed, invalid password, failed_attempts %s", failed_attempts)
+        if failed_attempts > 1 and not failed_attempts%5:
+            self.logger.warning("locking Account %s due to failed login attempts", user_id)
+            lock_time = timedelta(hours=1)*(failed_attempts//5)
+            new_time=datetime.utcnow()+lock_time
+            
+            sql = sql.values(locked_until=new_time)
+        conn.execute(sql)
+        return None
 
 def get_role_id(self:data, conn: Connection,  role:str) -> id:
     """[Return the role_id for given role name. ]

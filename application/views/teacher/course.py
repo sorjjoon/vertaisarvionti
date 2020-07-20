@@ -6,7 +6,7 @@ from flask import current_app as app, g
 import datetime
 from flask_login import login_user, logout_user, login_required, current_user
 from wtforms.fields.html5 import DateField
-from application.auth import account
+
 from application import db
 from application.domain.course import Course
 import json

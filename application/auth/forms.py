@@ -5,9 +5,10 @@ from application import db
 from flask import current_app as app, g
 from wtforms import StringField, PasswordField, validators, ValidationError, BooleanField
 from wtforms.widgets import PasswordInput
-from flask_login import login_user, logout_user, login_required, current_user
-from application.auth import account
+from flask_login import login_user, logout_user, login_required, current_user, fresh_login_required
 from sqlalchemy.exc import IntegrityError
+
+
 def username_free(form, field):
     print("checking usernmae")
     if not db.check_user(g.conn, field.data):
@@ -35,14 +36,9 @@ class RegisterForm(FlaskForm):
         csrf = False
 
 
-class LoginForm(FlaskForm):
-    username = StringField("Käyttäjänimi", validators=[validators.DataRequired(message=None)])
-    password = PasswordField("Salasana", validators=[validators.DataRequired(message=None)])  # TODO password strength
 
-
-
-@app.route("/user/", methods = ["GET", "POST"])
-@login_required
+@app.route("/auth/user/", methods = ["GET", "POST"])
+@fresh_login_required
 def user_details():
     if request.method == "GET":
         return render_template("auth/user_details.html", form=RegisterForm())
@@ -104,11 +100,8 @@ def user_details():
                 errors+=form.password2.errors
                 return render_template("auth/user_details.html", password_errors=errors, form=form)
 
-
-
         else: #this should only happen, if user took name tag from submit button for some reason
-
-            pass
+            app.logger.warning("submit name not found in request form")
     return redirect(url_for("user_details"))
         
 
@@ -126,7 +119,7 @@ def register():
     try:
         app.logger.info("Validatation success, attempting insert. New username %s", form.username.data)
         if form.student.data:
-            db.insert_user(g.conn, form.username.data, form.password.data, form.first_name.data, form.last_name.data)
+            db.insert_user(g.conn, form.username.data, form.password.data, form.first_name.data.capitalize, form.last_name.data)
         else: 
             db.insert_user(g.conn, form.username.data, form.password.data, form.first_name.data, form.last_name.data, role="TEACHER")
         app.logger.info("Insert success!")
@@ -134,28 +127,4 @@ def register():
     except ValueError:
         app.logger.info("Insert failed, this shouldn't happen, form should check if username is free")
         return render_template("auth/register.html", form=RegisterForm(), error="Username in use"), 422
-
-
-@app.route("/auth/login", methods=["GET", "POST"])
-def login_auth():
-    if request.method == "GET":
-        
-        return render_template("auth/login.html", form=LoginForm(), next = request.args.get("next"))
-
-    form = LoginForm(request.form)
-
-    user = db.get_user(g.conn, form.username.data, form.password.data)
-    if user is None:
-        return render_template("auth/login.html", form=form, error="Käyttäjänimi tai salasana on väärin"), 401
-
-    login_user(user)
-    app.logger.info("User " + form.username.data + " validated")
-    if request.form.get("next"):
-        try:
-            return redirect(request.form.get("next"))
-        except:
-            pass
-    return redirect(url_for("index"))
-
-
 

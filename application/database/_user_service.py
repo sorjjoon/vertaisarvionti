@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.sql import select, insert, delete, update, join, distinct
 from sqlalchemy.exc import IntegrityError
-from application.auth.account import account
+from application.auth.account import Account
 from sqlalchemy.engine import Connection
 #see documentation for queries 
 from .data import utcnow
@@ -68,25 +68,25 @@ def update_user(self:data, conn: Connection, user_id:int, username:str=None, fir
             trans.rollback()
             raise r
 
-def get_user_by_id(self:data, conn: Connection,  user_id: int) -> account:
+def get_user_by_id(self:data, conn: Connection,  user_id: int) -> Account:
     """Get all details of user matching given id
 
     Arguments:
         user_id {int} -- [id]
 
     Returns:
-        account -- [returns mtaching account object, None in case user not found]
+        Account -- [returns mtaching Account object, None in case user not found]
     """
     self.logger.info("fetching user: %s", user_id)
     join_clause = self.account.join(self.role)
-    sql = select([self.role.c.name, self.account.c.username, self.account.c.first_name, self.account.c.last_name]).select_from(join_clause).where(self.account.c.id==user_id)
+    sql = select([self.role.c.name, self.account.c.username, self.account.c.first_name, self.account.c.last_name, self.account.c.failed_attempts, self.account.c.locked_until]).select_from(join_clause).where(self.account.c.id==user_id)
     with conn.begin():
         result_set = conn.execute(sql)
         row = result_set.fetchone()
         
         result_set.close()       
         if row is not None:
-            return account(user_id,row[self.account.c.username], row[self.role.c.name], row[self.account.c.first_name], row[self.account.c.last_name] )
+            return Account(user_id,row[self.account.c.username], row[self.role.c.name], row[self.account.c.first_name], row[self.account.c.last_name], row[self.account.c.failed_attempts], row[self.account.c.locked_until] )
         else:
             return None
         

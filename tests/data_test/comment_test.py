@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 
-from application.auth.account import account
+from application.auth.account import Account
 from application.domain.course import Course
 from .db_fixture import conn, get_random_unicode, random_datetime
 

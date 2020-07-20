@@ -18,7 +18,7 @@ from application.domain.assignment import Assignment, Task
 from application.domain.course import Course
 
 
-from .db_fixture import (conn, format_error, get_random_unicode,
+from .db_fixture import (conn, format_error, get_random_unicode, insert_users,
                          insert_random_courses, random_datetime)
 
 
@@ -286,6 +286,15 @@ def get_correct_assignment(a_id, assig_dics):
             return dic
     return None
 
+def test_simple_assignment_in_time(conn):
+    from application import db
+    teachers, students = insert_users(db, teacher_count=1, student_count=1)
+    t = teachers[0]
+    s= students[0]
+    assert t
+    assert s
+    name, deadline, reveal
+    insert_random_courses(t.id, db, n=1)
 
 
 def random_assignment(course_id, teacher_id, hidden=False):

@@ -25,6 +25,11 @@ function sendRequest(target, method, async) {
   xhr.setRequestHeader('Content-Type', 'application/json');
   return xhr
 }
+function swapClass(elment1, element2, cssClass) {
+  $(element1).addClass(cssClass);
+  $(element2).removeClass(cssClass);
+}
+
 function validateAndSendPoints() {
   var current = Number(document.getElementById("grade_points").value)
   var max = Number(document.getElementById("max_points").value)

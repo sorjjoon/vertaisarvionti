@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from string import ascii_uppercase
 from random import choice
 from application.domain.course import Course
-from application.auth.account import account
+from application.auth.account import Account
 from application.domain.assignment import Assignment, Task, Feedback
 from datetime import datetime
 from .data import utcnow
@@ -21,7 +21,7 @@ from sqlalchemy import nullslast
 from sqlalchemy.exc import IntegrityError
 
 
-from application.auth.account import account
+from application.auth.account import Account
 
 from datetime import datetime
 

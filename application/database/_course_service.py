@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from string import ascii_uppercase
 from random import choice
 from application.domain.course import Course
-from application.auth.account import account
+from application.auth.account import Account
 from application.domain.assignment import Assignment, Task
 from datetime import datetime
 from typing import List, TYPE_CHECKING
@@ -262,7 +262,7 @@ def select_students(self:data, conn: Connection,  course_id:int, teacher_id:int)
             if row[self.course.c.teacher_id] != teacher_id:
                 self.logger.warning("User %s tried to access a course (id: %s) not belonging to them",teacher_id, course_id)
                 raise ValueError("Unauthorized access")
-            acc = account(row[self.account.c.id], row[self.account.c.username],"USER", row[self.account.c.first_name], row[self.account.c.last_name])
+            acc = Account(row[self.account.c.id], row[self.account.c.username],"USER", row[self.account.c.first_name], row[self.account.c.last_name], None, None)
             results.append(acc)
         rs.close()
 
