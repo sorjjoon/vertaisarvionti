@@ -27,12 +27,12 @@ from .db_fixture import (conn, format_error, get_random_unicode,
 
 
 def test_simple_answer(conn):
-    from application import db
+    from database import db
     
     reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
     teacher = insert_users(db, 1, roles=["TEACHER"])[0]
     student = insert_users(db, 1, roles=["USER"])[0]
-    c_id, code = db.insert_course(conn, Course("something", "something", abbreviation="something"), teacher.id )
+    c_id, code = db.insert_course(conn, Course("something", "something", abbreviation="some"), teacher.id )
     db.enlist_student(conn, code, student.id)
     f = generate_random_file()
     file_name = secure_filename(get_random_unicode(30))
@@ -82,11 +82,11 @@ def test_simple_answer(conn):
 
 
 def test_large_answer_insert_and_update(conn):
-    from application import db
+    from database import db
     visible_reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
     
     teacher = insert_users(db, 1, roles=["TEACHER"])[0]
-    course_id, _ = db.insert_course(conn, Course("something", "somthing", visible_reveal, abbreviation="something"), teacher.id)
+    course_id, _ = db.insert_course(conn, Course("something", "somthing", visible_reveal, abbreviation="asas"), teacher.id)
     f = generate_random_file()
     file_name = secure_filename(get_random_unicode(30))
     werk_file = FileStorage(f, file_name)

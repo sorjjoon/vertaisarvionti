@@ -1,0 +1,230 @@
+{% extends "layout.html" %}
+{% import 'comment/rich/quill_editor.jinja' as quill %}
+{% block title %}
+{{course.name}} -
+{% endblock %}
+
+
+{% block styles %}
+{{super()}}
+<link rel="stylesheet" href="{{ url_for('static', filename='course/course.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='comments/rich_comments.css') }}">
+<script src="{{ url_for('static', filename='comments/comment.js') }}"></script>
+<script>
+    function getCommentTarget() {
+        return "{{comment_target}}"
+    }
+    function getCommentUrl() {
+        return '{{url_for("comment")}}'
+    }
+    
+</script>
+{% endblock %}
+
+{% block page_wrapper_container %}
+    <div id="page_wrapper" class="container">
+      {% endblock %}
+
+{% block header %}
+<div id="normal">
+    <h1 id="course_name_header">{{course.name}} </h1>
+
+    {% if current_user.role == 'TEACHER' %}
+    <!-- <a id="course_dropdown" class="btn btn-link " role="button" data-toggle="dropdown" aria-haspopup="true"
+        aria-expanded="false">
+        <img id="settings_icon" src="{{url_for('static', filename='images/icons8-settings.svg')}}">
+    </a>
+
+    <div id="course_dropdown_menu" class="dropdown-menu" data-display="static" aria-labelledby="course_dropdown">
+        <button onclick="swapClass('#course_name_header', 'name_change_form', 'd-none')" class="dropdown-item"> Vaihda
+            nimeä</button>
+        <form method="POST" target="{{url_for('index')}}">
+            <input type="submit" class="dropdown-item" value="Poista kurssi" name="delete">
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% if current_user.role == 'TEACHER' %}
+<div id="name_change_form" class="d-none">
+    <form method="POST" target="{{url_for('update_course', course_id = course.id)}}">
+        <input id="course_name_change" type="text" name="name" value="{{course.name}}">
+        <input type="submit" name="course_name">
+    </form>
+    <button onclick="swapClass('#name_change_form', '#course_name_header', 'd-none')" class="dropdown-item">
+        Peruuta</button>
+</div> -->
+
+    {% endif %}
+    {% endblock %}
+
+    {% block body %}
+    <div id="course_index_container" class="container add_border">
+        {% block course_info %}
+
+        <div id="course_main">
+
+            <p> {{course.description}} </p>
+            <span class="mt-0 "> Opettaja: {{course.teacher_name}} </span>
+            {% if current_user.role=="TEACHER" %}
+            <span class="mt-0 ">
+                Koodi: {{course.code}}
+            </span>
+            {% endif %}
+
+
+            <div id="course_select_container" class="hori_wrapper larger_font mt-2">
+                <a id="course_select" class="{% if current=='index'%}current_selection{% endif %}"
+                    href="{{url_for('course.view_course', course_id=course.id)}}">
+                    <div id="selection_container">
+
+                        Etusivu
+
+                    </div>
+                </a>
+                <a id="course_select" class="{% if current=='assignments'%}current_selection{% endif %}"
+                    href="{{url_for('course.view_assignments', course_id=course.id)}}">
+                    <div id="selection_container">
+
+                        Tehtävät
+
+                    </div>
+                </a>
+                <a id="course_select" class="{% if current=='overview'%}current_selection{% endif %}"
+                    href="{{url_for('course.view_course', course_id=course.id, overview='all')}}">
+                    <div id="selection_container">
+
+                        {% if current_user.role =="TEACHER" %}
+
+                        Suoritukset
+
+                        {% elif current_user.role =="USER" %}
+
+                        Suoritukseni
+
+                        {% endif %}
+
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        {% endblock %}
+        <hr class="mb-4">
+        {% block content %}
+       
+            <div id="new_comment_wrapper">
+                <div id="new_comment">
+                    
+                </div>
+                <div id="new_comment_button" class="add_shadow" role="button">
+                    <a href="#" onclick="modifyComment('0');$('#new_comment_button').addClass('d-none')">Uusi viesti...</a>
+                </div>
+            </div>
+            <div id="old_comments">
+
+            </div>
+        </div>
+
+        {% endblock %}
+
+        {% block previous_url %}
+        {% endblock %}
+    </div>
+    {% endblock %}
+
+
+    {% block load_script %}
+
+    <script>
+
+        $(document).ready(function () {
+            resetNewComment();
+            clear_old_comments()
+            
+
+            onloadFunction = function () {
+                $("#old_comments").empty();
+                
+                if (this.status == 200) {
+                    const comments = JSON.parse(this.response)
+                    if(comments.length >0) {
+                        for (let c of comments) {
+                            const commentContainer = createComment(c,getCommentTarget() ,commentUrl=getCommentUrl(), imageUrl="{{url_for('static', filename='images/icons8-settings.svg')}}")
+                        $("#old_comments").append(commentContainer);
+                        }
+                    } else {
+                        $("#old_comments").append("<span class='no_comments'> Kurssilla ei ole vielä viestejä </span>");
+                    }
+                    
+                } else {
+                    $("#old_comments").append("<span > Viestien hakeminen ei onnistunut (" + this.status + ") </span>");
+                }
+            }
+            getCommentsJSON("{{comment_target}}", onloadFunction);
+
+        });
+    </script>
+    {% endblock %}
+<!-- 
+    <div id="new_comment_editor">
+
+    </div>
+    <div id="new_comment_footer" class="wrapper">
+        <div  class="hori_wrapper">
+            <input id="new_comment_submit" type="submit" class="btn btn-primary" value="Lähetä">
+            <input type="file" style="margin-left:auto" name="files" multiple>
+            <input type="hidden" name="comment_target" value='{{comment_target}}'>
+        </div>
+        <div id="new_comment_footer_reveal" class="hori_wrapper d-none">
+            <div class="row">
+                <div class="col-1">
+                    <input type="checkbox" id="reveal_after" name="reveal_after" value="1"
+                        onclick="toggleInputs()" checked>
+                </div>
+                <div class="col-6">
+                    <input id="reveal_date" name="reveal_date" type="date"
+                        placeholder="yyyy-mm-dd" />
+                </div>
+                <div class="col-2">
+                    <input id="reveal_time" name="reveal_time" type="text" placeholder="23:59" size="3">
+                </div>
+                <div class="col-2">
+
+                </div>
+            </div>
+            if (!test_time_format(document.getElementById("reveal_time").value) && document.getElementById("reveal_after").checked == false) {
+                    
+                    document.getElementById("time_error").innerHTML = "Aika on väärässä muodossa tai ei ole validi. Haluttu muoto hh:mm  tai hh.mm. Esim 9:45, 08.25 tai 23:59"
+                    return
+$("#new_comment_form").submit(function (e) {
+                e.preventDefault();
+                
+                console.log("submitting")
+                clear_old_comments()
+                const formData = new FormData(this);
+                const quill = document.getElementById("quill0").__quill
+                const commentDelta = JSON.stringify(quill.getContents())
+                formData.append("text", commentDelta)
+
+                $.ajax({
+                    url: "{{url_for('comment')}}",
+                    type: 'POST',
+                    data: formData,
+
+                    error: function (data) {
+                        $("#old_comments").append("<span class='error_text'> Viestien hakeminen ei onnistunut (" + this.status + ") </span>");
+                    },
+                    success: function (data, textStattus, jqXHR) {
+                        clear_old_comments()
+                        quill.setContents()
+                        getCommentsJSON("{{comment_target}}", onloadFunction);
+                    },
+                    cache: false,
+                    contentType: false,
+                    processData: false
+                });
+
+            });
+                }
+        </div>
+    </div> -->

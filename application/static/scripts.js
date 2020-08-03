@@ -1,6 +1,7 @@
 function toggleElement(checkbox_id, element_to_toggle, attribute, attribute_value) {
-  var checkBox = document.getElementById(checkbox_id);
-  var thing = document.getElementById(element_to_toggle);
+  const checkBox = document.getElementById(checkbox_id);
+  const thing = document.getElementById(element_to_toggle);
+  
   if (checkBox.checked == true) {
     thing.setAttribute(attribute, attribute_value);
   } else {
@@ -9,32 +10,34 @@ function toggleElement(checkbox_id, element_to_toggle, attribute, attribute_valu
 }
 
 function toggleProperty(checkbox_id, element_to_toggle, attribute, attribute_value) {
-  var stuff = document.getElementById(element_to_toggle);
+  const stuff = document.getElementById(element_to_toggle);
 
-  var checkBox = document.getElementById(checkbox_id);
+  const checkBox = document.getElementById(checkbox_id);
+  
   if (checkBox.checked == true) {
     stuff.style.setProperty(attribute, attribute_value);
+    
   } else {
     stuff.style.removeProperty(attribute)
   }
 }
 
 function sendRequest(target, method, async) {
-  var xhr = new XMLHttpRequest();
+  const xhr = new XMLHttpRequest();
   xhr.open(method, target, async);
   xhr.setRequestHeader('Content-Type', 'application/json');
   return xhr
 }
-function swapClass(elment1, element2, cssClass) {
+function swapClass(element1, element2, cssClass) {
   $(element1).addClass(cssClass);
   $(element2).removeClass(cssClass);
 }
 
 function validateAndSendPoints() {
-  var current = Number(document.getElementById("grade_points").value)
-  var max = Number(document.getElementById("max_points").value)
-  var text = document.getElementById("point_status")
-  var visible = document.getElementById("grade_visible").checked
+  const current = Number(document.getElementById("grade_points").value)
+  const max = Number(document.getElementById("max_points").value)
+  const text = document.getElementById("point_status")
+  const visible = document.getElementById("grade_visible").checked
 
   if (isNaN(max)) {
     return
@@ -51,8 +54,8 @@ function validateAndSendPoints() {
   }
 
   text.innerHTML = "päivitetään... (uudet pisteet " + current + ")"
-  var submit_id = document.getElementById("submit_id").value
-  var data = {
+  const submit_id = document.getElementById("submit_id").value
+  const data = {
     target: 'feedback',
     submit_id: submit_id,
     update: ["points"],
@@ -75,20 +78,18 @@ function validateAndSendPoints() {
 }
 
 function sendComment(event) {
-
-  var id = event.target.id;
-
+  const id = event.target.id;
+  clear_old_comments()
   if (id === 'send_comment') {
     var status = document.getElementById('comment_submit_status')
     status.innerHTML = "tallennetaan..."
-    var txt = document.getElementById('comment_text')
-    var target = document.getElementById("comment_target").value
-    var data = {
+    const txt = document.getElementById('comment_text')
+    const target = document.getElementById("comment_target").value
+    const data = {
       text: txt.value,
       target: target
 
     }
-
     xhr = sendRequest("/comment", "POST", true)
 
     xhr.onload = function () {
@@ -104,40 +105,29 @@ function sendComment(event) {
     xhr.send(JSON.stringify(data));
 
   }
-
+ 
 }
 function getCommentsHTML(target_id, onloadFunc) {
   xhr = sendRequest("/comment", "GET", true);
   xhr.setRequestHeader('X-Comment-Target', target_id);
-  xhr.setRequestHeader("Content-Type", "text/html");
+  xhr.setRequestHeader("Accept:", "text/html");
   xhr.onload = onloadFunc;
   xhr.send();
 
 }
 
-function getCommentsJSON(target_id) {
+function getCommentsJSON(target_id, onloadFunc) {
   xhr = sendRequest("/comment", "GET", true)
-  xhr.setRequestHeader('Comment-target', target_id);
-  xhr.setRequestHeader("Content-Type", "application/json")
-  xhr.onload = function () {
-    if (xhr.status == 200) {
-      const localText = this.responseText;
-      var comments = JSON.parse(localText);
-      $("#old_comments").empty()
-      comments.forEach(element => {
-        parseAddComment(element)
-      });
-
-    } else {
-      console.log("Kommenttien haku ei onnistunut")
-    }
-  }
+  xhr.setRequestHeader('X-Comment-Target', target_id);
+  xhr.setRequestHeader("Accept", "application/json")
+  xhr.onload = onloadFunc
   xhr.send();
 }
 
+
 function parseAddComment(element) {
 
-  var new_comment = `
+  const new_comment = `
   
         <tr id="comment_`+ element.id + `">
             <td id="header">
@@ -151,18 +141,14 @@ function parseAddComment(element) {
                 <td id="comment_text">
                 <p style="white-space: pre-wrap;"> `+ element.text + `</p>
                 </td>
-            </tr>
-
-       
-  
-  `
+            </tr>`
   $("#old_comments").append(new_comment);
 
 }
 
 function swapIntoInput(element, new_element_str, target_url, method, status_elemnt, key_to_change) {
-  var new_element = document.createElement("div")
-  var old_element = element
+  const new_element = document.createElement("div")
+  const old_element = element
   $(new_element).html(new_element_str);
   $(element).replaceWith(new_element);
   new_element.onupdate = function () {
@@ -185,3 +171,32 @@ function swapIntoInput(element, new_element_str, target_url, method, status_elem
   }
 
 }
+
+
+function createDropdown(id, iconLink) {
+  const dropdownToggle = '<a id="'+id+'" class="btn btn-link " role="button" data-toggle="dropdown" aria-haspopup="true"  aria-expanded="false"><img id="settings_icon" src="'+iconLink+'"></a>';
+  const drowdownMenu = '<div id="'+id+'" class="dropdown-menu" data-display="static" aria-labelledby="'+id+'"></div>';
+  const dropdownToggleHTML = $.parseHTML( dropdownToggle, keepScripts=true)
+  const drowdownMenuHTML = $.parseHTML( drowdownMenu, keepScripts=true )
+  return [dropdownToggleHTML, drowdownMenuHTML]
+}
+
+String.prototype.formatString = String.prototype.formatString ||
+function () {
+    
+    var str = this.toString();
+    if (arguments.length) {
+        var t = typeof arguments[0];
+        var key;
+        var args = ("string" === t || "number" === t) ?
+            Array.prototype.slice.call(arguments)
+            : arguments[0];
+
+        for (key in args) {
+            str = str.replace(new RegExp("\\{" + key + "\\}", "gi"), args[key]);
+        }
+    }
+
+    return str;
+};
+

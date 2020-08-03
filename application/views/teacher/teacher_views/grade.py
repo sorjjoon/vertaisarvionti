@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, validators, ValidationError, BooleanField, FormField, FieldList, TextAreaField
 from datetime import datetime, timezone
 from flask import current_app as app, g, session, Response
-from application import db
+from database import db
 import pytz
 import datetime
 from flask import render_template, redirect, url_for, request
@@ -24,7 +24,7 @@ def find_next_student(id_list:list, current:int):
 
 
 
-@app.route("/view/<course_id>/overview/<assignment_id>/task/<task_id>/grade/<student_id>",  methods=["GET", "POST"])
+@app.route("/view/<int:course_id>/overview/<int:assignment_id>/task/<int:task_id>/grade/<int:student_id>",  methods=["GET", "POST"])
 @login_required
 def grade_student(course_id, assignment_id, task_id, student_id):
     app.logger.info("grading student %s, task %s", student_id, task_id)

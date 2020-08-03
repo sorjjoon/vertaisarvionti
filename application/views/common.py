@@ -8,7 +8,7 @@ import datetime
 import pytz
 from timeit import default_timer as timer
 from application.domain.course import Course
-from application import db
+from database import db
         
 def set_course_counts(courses:list, counts:list):
     for c in counts:
@@ -52,28 +52,8 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for("courses"))
     else:
-        return redirect(url_for("login_auth"))
+        return redirect(url_for("auth.login_auth"))
 
 
     
-        
-@app.route("/view/<course_id>")
-@login_required
-def view_course(course_id):
-    app.logger.info("user "+str(current_user.get_id())+" accessing index for course "+str(course_id))
-    course = db.select_course_details(g.conn, course_id, current_user.get_id())
-    if course is None:
-        app.logger.info("invalid course id")
-        return redirect(url_for("index"))
-    db.set_assignments(g.conn, course)
-    course.set_timezones("Europe/Helsinki")
-    
-    
-    if request.args.get("a"):
-        return render_template("/course/assignment.html", course = course, current="assignments")
-    elif request.args.get("overview"):
-        return render_template("/course/overview.html", course = course, current="overview")
-    else:
-        comments = db.select_comments(g.conn, current_user.get_id(), course_id=course_id)
-        
-        return render_template("/course/index.html", course = course, current="index", comments=comments, comment_target="c:"+str(course_id))
+

@@ -1,0 +1,81 @@
+{% extends "course/index.html" %}
+
+{% block title %}
+Tehtävät - {{super()}}
+{% endblock %}
+
+
+{% block course_info %}
+
+{{super()}}
+
+{% endblock %}
+
+{% block content %}
+<div id="content_wrapper">
+    <div id="new_assignment_wrapper">
+        <a id="new_assignment_link" href="{{url_for('.new_assignment', course_id=course.id)}}">Uusi tehtävä</a>
+    </div>
+    <div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+ 
+
+{% block load_script %}
+
+{% endblock %}
+
+
+<!-- {% if course.assignments %}
+
+
+        
+        {% for assig in course.assignments %}
+        
+        <div id=assig_table >
+            
+            <div class="row">
+                <div class="col-12">
+                    <p class="mb-0">
+                        <a href={{url_for('view_assig', course_id=course.id, assignment_id=assig.id)}} >
+                        {{assig.name}}
+                    </a>
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <p class="mb-0">Palautuspäivä: {% if assig.deadline%}
+                        {{assig.deadline.strftime("%d.%m.%y, %H:%M")}}
+                        
+                    </p>
+                    <p class="smaller_font">
+                        ({{get_deadline_string(assig.deadline)}})
+                    </p>
+                    {% else %}
+                    Ei palautuspäivää
+                    {% endif %}
+                </div>
+            </div>
+            {% if assig.notification %}
+            <div class="row">
+                <div class="col-12">
+                    <p class="mb-0">{{assig.notification}}<p>
+                </div>
+            </div>
+
+        
+        </div>
+   {% endif %}
+        {% endfor %}
+
+    
+{% else %}
+<div class="container ml-2 pt-4 pb-2" style="border:1px solid #d9d9d9; ">
+<p>Kurssilla ei ole vielä julkaistu tehtäviä </p>
+</div>
+{% endif %} -->

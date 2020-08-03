@@ -148,7 +148,7 @@ def create_dummy(db: data, user_id=None, course=None, task=None, assignment=None
 
 
 def test_select_file_details_multiple(conn):
-    from application import db
+    from database import db
     db.insert_user(conn, "turha", "turha", "turha", "turha", role="TEACHER")
     user_id = db.get_user(conn, "turha", "turha").id
     case = unittest.TestCase()
@@ -212,7 +212,7 @@ def test_select_file_details_multiple(conn):
 
 
 def test_select_file_details_single(conn):
-    from application import db
+    from database import db
     db.insert_user(conn, "turha", "turha", "turha", "turha", role="TEACHER")
     user_id = db.get_user(conn, "turha", "turha").id
     c_id, _ = db.insert_course(conn, Course(
@@ -264,7 +264,7 @@ def test_select_file_details_single(conn):
 
 
 def test_large_assignment_with_files_insert_with_access_rights(conn):
-    from application import db
+    from database import db
 
     teachers = insert_users(db, 8, roles=["TEACHER"])
 
@@ -418,7 +418,7 @@ def test_large_assignment_with_files_insert_with_access_rights(conn):
 
 
 def test_simple_file_assignment_task(conn):
-    from application import db
+    from database import db
     from .assignment_test import test_simple_assignment
     with generate_random_file() as temp, generate_random_file() as task_temp:
         file_name = get_random_unicode(10)
@@ -474,7 +474,7 @@ def test_simple_file_assignment_task(conn):
 
 
 def test_file_update(conn):
-    from application import db
+    from database import db
     results1 = create_dummy(db)
     results2 = create_dummy(db)
     try:
@@ -721,10 +721,10 @@ def test_file_update(conn):
 
 
 def test_file_log(conn):
-    from application import db
+    from database import db
 
 def test_file_update_throws(conn):
-    from application import db
+    from database import db
     with pytest.raises(ValueError):
         db.update_file(conn, 2, [1,2,3], files_to_delete=[1,2,3,6])
 
@@ -735,7 +735,7 @@ def test_file_update_throws(conn):
         assert row is None
 
 def test_db_file_insert_constraint(conn):
-    from application import db
+    from database import db
     s = "nothing"
     db.insert_user(conn, s, s, s, s, role="TEACHER")
     user_id = db.get_user(conn, s, s).get_id()

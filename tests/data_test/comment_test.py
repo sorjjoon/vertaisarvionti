@@ -13,14 +13,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 
-from application.auth.account import Account
+from application.domain.account import Account
 from application.domain.course import Course
 from .db_fixture import conn, get_random_unicode, random_datetime
 
 from .db_fixture import insert_users
 
 def test_simple_comment(conn):
-    from application import db
+    from database import db
     teachers, students = insert_users(db)
     t= teachers[0]
     s = students[0]
@@ -61,7 +61,7 @@ def test_simple_comment(conn):
 
 
 def test_raises_error(conn):
-    from application import db
+    from database import db
 
     with pytest.raises(ValueError) as r:
         db.insert_comment(conn, 1, "moi")
@@ -75,3 +75,12 @@ def test_raises_error(conn):
     with pytest.raises(IntegrityError) as r:
         db.insert_comment_dict(conn, json_dic)
     assert "null_comment_foreign_keys" in str(r.value), "null_comment_foreign_keys not found in "+str(r.value)
+    c= Course("something", "something", abbreviation="some")
+    course_id, _ =db.insert_course(conn, c, t.id)
+
+    
+    sql = db.comment.insert().values(id=0, text="moi", course_id=course_id, user_id=t.id)
+    with db.engine.connect() as conn:
+        with pytest.raises(IntegrityError) as r:
+            conn.execute(sql)
+        assert "comment_id_must_be_positive" in str(r.value), "comment_id_must_be_positive not found in "+str(r.value)

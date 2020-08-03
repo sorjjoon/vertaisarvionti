@@ -7,9 +7,9 @@ import datetime
 import pytz
 from timeit import default_timer as timer
 from application.domain.course import Course
-from application import db
+from database import db
 
-@app.route("/view/<course_id>/assignment/<assignment_id>")
+@app.route("/view/<int:course_id>/assignment/<int:assignment_id>")
 @login_required
 def view_assig(course_id, assignment_id): #TODO rights validations (remember reveal)
     assignment = db.select_assignment(g.conn, assignment_id)

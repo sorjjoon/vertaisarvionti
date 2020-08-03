@@ -1,0 +1,122 @@
+{% set current="assignments" %}
+
+{% extends "course/index.html" %} 
+{% block content %}
+
+<form method="POST" action={{url_for('.new_assignment', course_id=course.id) }} enctype="multipart/form-data">
+    <table id="assignment_info" class="table">
+      <thead>
+        <tr>
+          <th>
+            <h3>Palautuksen tiedot</h3>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>
+          {{form.name.label}}
+        </td>
+        <td>
+          {{form.name}}
+        </td>
+      </tr>
+      
+        
+      
+        <tr>
+          <td>
+        {{ form.deadline.label }}
+          </td>
+    
+          <td>
+        {{ form.deadline }}
+          </td>
+          <td>
+                <ul>
+                  {% for error in form.deadline.errors %}
+                  <li>{{ error }}</li>
+                  {% endfor %}
+                </ul>
+              </td>
+        </tr>
+        
+            <tr>
+              <td>
+            {{ form.reveal.label }}
+              </td>
+        
+              <td>
+            {{ form.reveal }}
+              </td>
+              <td>
+                    <ul>
+                      {% if reveal_error is defined %}
+                      <li>{{ reveal_error }}</li>
+                      {% endif %}
+                    </ul>
+                  </td>
+            </tr>
+            
+            <tr>
+              <td>
+            {{ form.files.label }}
+              </td>
+        
+              <td>
+                {{ form.files }}
+              </td>
+            </tr>
+          </table>
+          <table id="tasks">
+            <tr>
+              <td>
+                <h3 id="space"> Tehtävät </h3>
+
+              </td>
+              <td>
+                <input type="submit" name="more" value="Lisää Tehtävä" /> 
+              </td>
+            </tr>
+          
+            {% for f in form.tasks %}
+            <tr>
+              <td>
+                {{f.points.label}}
+              </td>
+              <td>
+                
+                {{f.points}}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                {{f.brief.label}}
+              </td>
+              <td>
+                
+                {{f.brief}}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                {{f.task_files.label}}
+              </td>
+              <td>
+                
+                {{f.task_files}}
+              </td>
+            </tr>
+            {% endfor %}
+
+            {{ form.csrf_token }}
+            <input id="tasks_size" type="hidden" value="1">
+          </tbody>
+    </table>
+    
+    <input type="submit" name="submit" value="Luo Palautus" />  
+</form>
+
+
+
+{% endblock %}

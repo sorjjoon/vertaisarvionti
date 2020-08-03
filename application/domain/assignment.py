@@ -1,8 +1,10 @@
 import datetime
 import pytz
+from .base import DomainBase
 
-class Feedback():
+class Feedback(DomainBase):
     def __init__(self, id:int=None, points=None,modified=None, date:datetime.datetime=None, submit_id:int=None, files=None, owner_id=None, description=None, visible=None, time_zone = "UTC"):
+        self.type="feedback"
         self.id = id
         
         self.submit_id = submit_id
@@ -27,8 +29,9 @@ class Feedback():
 
 
 
-class Submit():
+class Submit(DomainBase):
     def __init__(self, id:int=None, date:datetime.datetime=None, task_id:int=None, files=[],feedback=None, description:str=None, time_zone = "UTC"):
+        self.type="submit"
         self.id = int(id)
         self.task_id = int(task_id)
         self.files = files
@@ -63,8 +66,9 @@ class Submit():
         return "id: "+str(self.id)+" task_id: "+str(self.task_id)
 
 
-class Assignment():
+class Assignment(DomainBase):
     def __init__(self, id, name, reveal:datetime.datetime, deadline:datetime.datetime, tasks, files = [], time_zone = "UTC", submits = [], task_count = None, submit_count = None, course_id=None, course_abbreviation=None):
+        self.type="assignment"
         self.id = id
         self.reveal=reveal
         self.name = name
@@ -129,8 +133,9 @@ class Assignment():
     def __repr__(self):
         return ", ".join(["id: ", self.id,  "files: ", self.files, "answer: "])
 
-class Task():
+class Task(DomainBase):
     def __init__(self, id, number, points, description , files=[], assignment_id=None, time_zone = "UTC", done:bool = False, answer = None):
+        self.type="task"
         if id is not None:
             self.id = int(id)
         else:
@@ -175,8 +180,9 @@ class Task():
         return ", ".join(["id: ", str(self.id),"assig_id: ", str(self.assignment_id) ,"number: ", str(self.number), "descrip: ", str(self.description), "points: ", str(self.points), "files: ", str(self.files), "answer: ", str(self.answer)])
         
 
-class Answer():
+class Answer(DomainBase):
     def __init__(self, id:int, description: str, reveal:datetime.datetime, files:list, time_zone = "UTC"):
+        self.type="answer"
         self.id = int(id)
         if reveal is not None:
             self.reveal = pytz.timezone(time_zone).localize(reveal)
@@ -213,12 +219,14 @@ class Answer():
     def __repr__(self):
         return str(self)
 
-class File():
+
+class File(DomainBase):
     def __init__(self, id:int, name:str, date:datetime.datetime, time_zone = "UTC"):
+        self.type="file"
         if id is None:
             raise ValueError("id can't be null")
+
         self.id = int(id)
-        
         self.name = name
         if date is not None:
             self.date = pytz.timezone(time_zone).localize(date)
@@ -227,6 +235,7 @@ class File():
 
     def set_timezones(self, time_zone:str):
         self.date = self.date.astimezone(pytz.timezone(time_zone))
+
     
     def __repr__(self):
         return "id: "+str(self.id)+" name: "+self.name

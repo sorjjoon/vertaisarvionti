@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 
-from application.auth.account import Account
+from application.domain.account import Account
 from application.domain.course import Course
 from .db_fixture import conn, get_random_unicode, random_datetime
 
@@ -33,7 +33,7 @@ def insert_courses(db, teacher_id, n):
 
 
 def test_course_insert(conn):
-    from application import db
+    from database import db
     from .user_test import test_user_insert
     test_user_insert(conn)
     student = db.get_user(conn, "oppilas", "oppilas")
@@ -61,7 +61,7 @@ def test_course_insert(conn):
     return id, code
 
 def test_large_course_insert(conn):
-    from application import db
+    from database import db
     teachers = []
     for _ in range(random.randint(18,23)):
         username = get_random_unicode(35)
@@ -106,7 +106,7 @@ def test_large_course_insert(conn):
     return teachers
 
 def test_course_signup(conn):
-    from application import db
+    from database import db
     
     id, code = test_course_insert(conn)
 
@@ -128,9 +128,9 @@ def test_course_signup(conn):
         assert course[0].description == "äöääöäpläplpä21äl.masalöas"
 
 def test_invalid_signup(conn):
-    from application import db
+    from database import db
     
-    description = get_random_unicode(100)
+    description = get_random_unicode(20)
     reveal = pytz.utc.localize(datetime.datetime.utcnow()) - datetime.timedelta(minutes=1)
     teacher = insert_users(db, 1, roles=["TEACHER"])[0]
     student = insert_users(db, 1, roles=["USER"])[0]
@@ -145,7 +145,7 @@ def test_invalid_signup(conn):
 
 
 def test_large_course_signup(conn):
-    from application import db
+    from database import db
     from .user_test import test_weird_chars_large_set
     ids = test_weird_chars_large_set(conn, random_roles=False)
     

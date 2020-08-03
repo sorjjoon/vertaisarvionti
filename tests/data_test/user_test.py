@@ -14,9 +14,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import (Select, between, delete, desc, distinct, insert,
                             join, outerjoin, select, update)
 
-from application.auth.account import Account
+from application.domain.account import Account
 from .db_fixture import conn, get_random_unicode
-from application.database._user_auth import AccountLockedError, AuthError
+from application.database.exceptions import AccountLockedError, AuthError
 
 def insert_users(db, n, roles=["USER", "TEACHER"]):
     accs = []
@@ -39,7 +39,7 @@ def insert_users(db, n, roles=["USER", "TEACHER"]):
 
     
 def test_user_insert(conn):
-    from application import db
+    from database import db
     db.insert_user(conn, "oppilas", "oppilas", "Tessa", "Testaaja")
     with pytest.raises(IntegrityError):
         db.insert_user(conn, "oppilas", "oppilas", "Tessa", "Testaaja")
@@ -74,7 +74,7 @@ def test_user_insert(conn):
 
 
 def test_weird_chars_large_set(conn, random_roles = True):
-    from application import db
+    from database import db
     username = "*ÄÖpÖÄPäöLÄ"
     password = "äåäÖÅÄÖÄL=(!=!?)"
     first = "ääöäöpöpäÖPLÄPLÄ"
@@ -92,7 +92,7 @@ def test_weird_chars_large_set(conn, random_roles = True):
     firsts = []
     lasts = []
     roles = []
-    for i in range(20):
+    for i in range(100):
         username = get_random_unicode(30)
         password = get_random_unicode(30)
         
@@ -113,31 +113,42 @@ def test_weird_chars_large_set(conn, random_roles = True):
         db.insert_user(conn, username, password, first, last, role=role)
 
     ids = []
+    seen = []
     for username, password, first, last, role in zip(usernames, passwords, firsts, lasts, roles):
+        assert username not in seen
+        seen.append(username)
+
         acc = db.get_user(conn, username, password)
         assert acc is not None
 
         assert acc.last_name == last
         assert acc.first_name == first
         assert acc.role == role
+        assert acc.is_authenticated()
 
-        acc2 = db.get_user_by_id(conn, acc.id)
         
+        n= random.randint(0,5)
+        for _ in range(n):
+            db.get_user(conn, username, password+"jaslj")
+        acc2 = db.get_user_by_id(conn, acc.id)
+        assert acc2.failed_attempts==n
+        if n==5:
+            assert acc2.locked_until is not None
+            assert not acc2.is_authenticated()
+        else:
+            assert acc2.locked_until is None
+            assert acc2.is_authenticated()
+        acc2.locked_until = None
+        acc2.failed_attempts=0
 
-        assert acc2.id == acc.id
-        assert acc.id not in ids
-
-        assert acc.last_name == acc2.last_name
-        assert acc.first_name == acc2.first_name
-        assert acc.role == acc2.role
-        assert acc.name == acc2.name
+        assert acc2 == acc
 
         ids.append(acc.id)
     return ids
 
 
 def test_account_locking(conn):
-    from application import db
+    from database import db
     username1 = get_random_unicode(20)
     password1 = get_random_unicode(40)
     name1="somthing"
@@ -150,9 +161,9 @@ def test_account_locking(conn):
 
     db.insert_user(conn, username1, password1, name1, last1)
     db.insert_user(conn, username2, password2, name2, last2)
-    user1=db.get_user(conn, username1, password1)
 
-    user2=db.get_user(conn, username1, password1)
+    user1=db.get_user(conn, username1, password1)
+    user2=db.get_user(conn, username2, password2)
     
     id1=user1.id
     id2=user2.id
@@ -169,6 +180,8 @@ def test_account_locking(conn):
     assert user1.failed_attempts == user2.failed_attempts == 0
     assert user1.locked_until == user2.locked_until == None
 
+    assert user1.is_authenticated() and user2.is_authenticated()
+
     for _ in range(4):
         null = db.get_user(conn, username1, get_random_unicode(39))
         assert null is None
@@ -180,13 +193,15 @@ def test_account_locking(conn):
     assert user2.name == username2
 
     assert user1.failed_attempts == 4
-    assert user1.failed_attempts == 0
+    assert user1.is_authenticated()
+
+    assert user2.failed_attempts == 0
 
     assert user1.locked_until == user2.locked_until == None
 
     user1 = db.get_user(conn, username1, password1)
     assert user1
-    
+    assert user1.is_authenticated()
 
     assert isinstance(user1, Account)
 
@@ -207,11 +222,12 @@ def test_account_locking(conn):
     assert locked_user1.first_name == user1.first_name
     assert locked_user1.failed_attempts==5
     assert locked_user1.locked_until is not None
-    assert locked_user1.locked_until > pytz.timezone("utc").localize(datetime.utcnow())+timedelta(minutes=58)
+    assert locked_user1.locked_until.tzinfo is not None
+    assert locked_user1.locked_until > (pytz.timezone("utc").localize(datetime.utcnow())+timedelta(minutes=58))
     assert not locked_user1.is_authenticated()
     same_user2 = db.get_user(conn, username2, password2)
 
-    assert same_user2 == user2
+    
 
     for _ in range(20):
         with pytest.raises(AccountLockedError):
@@ -244,7 +260,7 @@ def test_account_locking(conn):
     assert user1 is not None
 
     assert user1.failed_attempts==9
-    assert user1.is_authenticated()
+    
     
     user2 = db.get_user_by_id(conn, id2)
 

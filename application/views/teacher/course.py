@@ -7,7 +7,7 @@ import datetime
 from flask_login import login_user, logout_user, login_required, current_user
 from wtforms.fields.html5 import DateField
 
-from application import db
+from database import db
 from application.domain.course import Course
 import json
 class CourseForm(FlaskForm):
@@ -55,13 +55,13 @@ def new_course():
 
     return redirect(url_for("courses"))
 
-@app.route("/view/<course_id>/teacher/students")
+@app.route("/view/<int:course_id>/teacher/students")
 @login_required
 def view_course_students(course_id):
     students = db.select_students(g.conn, course_id, current_user.get_id())
     return render_template("/teacher/course/students.html", students = students)
     
-@app.route("/view/<course_id>/teacher/update", methods=["PATCH"])
+@app.route("/view/<int:course_id>/teacher/update", methods=["PATCH"])
 @login_required
 def update_course(course_id):
     if request.method == "PATCH":

@@ -1,6 +1,8 @@
 import datetime
 import pytz
-class Course():
+
+from .base import DomainBase
+class Course(DomainBase):
     def __init__(self, name, description, code=None, id=None, assignments = [], min=None, time_zone = "UTC", teacher_id = None, student_count = 0, teacher_name = "", abbreviation=None):
         self.name=name
         self.description=description

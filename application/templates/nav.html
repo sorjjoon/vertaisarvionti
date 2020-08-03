@@ -33,8 +33,8 @@
               {% else %}
               
               {% endif %}
-              <a href="{{ url_for('user_details') }}" class="dropdown-item" style="color: black;">Käyttäjätiedot</a>
-              <a href="{{ url_for('logout_auth') }}" class="dropdown-item" style="color: black;">Kirjaudu ulos</a>
+              <a href="{{ url_for('auth.user_details') }}" class="dropdown-item" style="color: black;">Käyttäjätiedot</a>
+              <a href="{{ url_for('auth.logout_auth') }}" class="dropdown-item" style="color: black;">Kirjaudu ulos</a>
 
             </div>
           </div>
@@ -43,10 +43,10 @@
         {% else %}
         
         <li class="nav-item">
-          <a  class="nav-link black_hover" href="{{ url_for('login_auth')}}" >Kirjaudu Sisään</a>
+          <a  class="nav-link black_hover" href="{{ url_for('auth.login_auth')}}" >Kirjaudu Sisään</a>
         </li>
         <li class="nav-item">
-          <a  class="nav-link black_hover" href="{{ url_for('register')}}">Rekisteröidy</a>
+          <a  class="nav-link black_hover" href="{{ url_for('auth.register')}}">Rekisteröidy</a>
         </li>
 
         {% endif %}

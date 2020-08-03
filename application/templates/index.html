@@ -29,12 +29,11 @@ Kurssini -
             </header>
 
 
-
             <div id="course_list_container" class="d-flex flex-row flex-wrap justify-content-start">
-
+                
                 {% if courses %}
                 {% for course in courses %}
-                <a id="course_container" href="{{url_for('view_course', course_id=course.id)}}"
+                <a id="course_container" href="{{url_for('course.view_course', course_id=course.id)}}"
                     class=" d-flex flex-column add_border">
                     <img src="{{ url_for('static', filename='images/1.jpg') }}">
                     <h5 class="text">{{course.name}}</h5>

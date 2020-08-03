@@ -1,0 +1,18 @@
+
+  {% macro editor(id="editor", previous=none) -%}
+  <div id="{{id}}">
+       
+  </div>
+<script>
+   var quill = new Quill('#{{id}}', {
+     theme: 'snow',
+     placeholder: 'Uusi viesti...'
+   });
+   {% if previous %}
+    quill.setContents(previous)
+   {% endif %}
+ </script>
+
+{%- endmacro %}
+  
+  

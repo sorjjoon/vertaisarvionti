@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, validators, ValidationError, BooleanField, FormField, FieldList, TextAreaField
 from datetime import datetime, timezone
 from flask import current_app as app, g, session, send_file
-from application import db
+from database import db
 import pytz
 import datetime
 from flask import render_template, redirect, url_for, request
@@ -17,7 +17,7 @@ from csv import DictWriter
 from datetime import date
 #TODO auths
 
-@app.route("/view/<course_id>/overview/submits")
+@app.route("/view/<int:course_id>/overview/submits")
 @login_required
 def course_feedbacks(course_id):
     points, names, task_names = db.get_course_task_stats(g.conn, course_id)
@@ -25,7 +25,7 @@ def course_feedbacks(course_id):
     url = url_for('course_csv', course_id=course_id)
     return render_template("/teacher/overview/task_table.html", points=points, names=names, task_names = task_names, csv_url = url)
 
-@app.route("/view/<course_id>/overview/csv")
+@app.route("/view/<int:course_id>/overview/csv")
 @login_required
 def course_csv(course_id):
     points, names, task_names = db.get_course_task_stats(g.conn, course_id)
@@ -47,7 +47,7 @@ def course_csv(course_id):
 
 
 
-@app.route("/view/<course_id>/overview")
+@app.route("/view/<int:course_id>/overview")
 @login_required
 def course_overview(course_id):
     if current_user.role == "USER":
@@ -62,7 +62,7 @@ def course_overview(course_id):
     return render_template("/teacher/overview/course.html", course = course)  
 
 
-@app.route("/view/<course_id>/overview/<assignment_id>")
+@app.route("/view/<int:course_id>/overview/<int:assignment_id>")
 @login_required
 def assignment_overview(course_id, assignment_id):
     if current_user.role == "USER":
@@ -84,7 +84,7 @@ class AnswerForm(FlaskForm):
     )
     files = MultipleFileField(label="Aineistot, max 50 Mb")
 
-@app.route("/view/<course_id>/overview/<assignment_id>/task/<task_id>",  methods=["GET", "POST"])
+@app.route("/view/<int:course_id>/overview/<int:assignment_id>/task/<int:task_id>",  methods=["GET", "POST"])
 @login_required
 def task_overview(course_id, assignment_id, task_id):
     if current_user.role == "USER":

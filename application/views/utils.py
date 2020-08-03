@@ -1,6 +1,6 @@
 
-#from application import app, db
-from flask import render_template, redirect, url_for, request, Response, send_file
+
+from flask import render_template, redirect, url_for, request, Response, send_file, abort
 from flask import current_app as app, g, g
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
@@ -11,32 +11,37 @@ import json
 from timeit import default_timer as timer
 from timeit import default_timer as timer
 from application.domain.course import Course
-from application import db
-         # try:
-        #     previous = current_url[:current_url.rindex("/")]
-        #     with app.test_client() as tc:
-        #         response = tc.get(previous)
-        #         if response.status_code == 404:
-        #             return previous_url(previous)
-        #         else:
-                    
-        #             return previous
+from application.domain.assignment import File
+from database import db
+from application.domain.utils import get_file_extension
+
+
+
+def get_file_download_link(file:File, **kwargs):
+    """Valid kwargs are url, target, extension, icon_size, name, id and force_download
+
+        Args:
+            time_zone (str): [description]
+        """
+    if "force_download" not in kwargs:
+        kwargs["force_download"]=0
+    if "url" not in kwargs:
+        kwargs["url"]=url_for("get_file", filename=file.name, id=file.id, force_download=kwargs["force_download"])
+    if "target" not in kwargs:
+        kwargs["target"]="_blank"
+    if "extension" not in kwargs:
+        kwargs["extension"]=get_file_extension(file.name)
+    if "icon_size" not in kwargs:
+        kwargs["target"]="md"
+    if "name" not in kwargs:
+        kwargs["name"]=file.name
+    if "id" not in kwargs:
+        kwargs["id"]="file"+str(file.id)
+
+    return """<a id="{id}" href="{url}" target="{target}" class="slightly_smaller_font"><span class="fiv-cla fiv-icon-{extension} fiv-size-{icon_size}"></span>{name}</a>""".format(**kwargs)
+
 @app.context_processor
 def utility_processor():
-    
-
-    def get_file_extension(file_name):
-        try:
-            extension = file_name[file_name.rindex(".")+1:]
-            if extension not in ["3g2","3ga","3gp","7z","aa","aac","ac","accdb","accdt","ace","adn","ai","aif","aifc","aiff","ait","amr","ani","apk","app","applescript","asax","asc","ascx","asf","ash","ashx","asm","asmx","asp","aspx","asx","au","aup","avi","axd","aze","bak","bash","bat","bin","blank","bmp","bowerrc","bpg","browser","bz2","bzempty","c","cab","cad","caf","cal","cd","cdda","cer","cfg","cfm","cfml","cgi","chm","class","cmd","code-workspace","codekit","coffee","coffeelintignore","com","compile","conf","config","cpp","cptx","cr2","crdownload","crt","crypt","cs","csh","cson","csproj","css","csv","cue","cur","dart","dat","data","db","dbf","deb","default","dgn","dist","diz","dll","dmg","dng","doc","docb","docm","docx","dot","dotm","dotx","download","dpj","ds_store","dsn","dtd","dwg","dxf","editorconfig","el","elf","eml","enc","eot","eps","epub","eslintignore","exe","f4v","fax","fb2","fla","flac","flv","fnt","folder","fon","gadget","gdp","gem","gif","gitattributes","gitignore","go","gpg","gpl","gradle","gz","h","handlebars","hbs","heic","hlp","hs","hsl","htm","html","ibooks","icns","ico","ics","idx","iff","ifo","image","img","iml","in","inc","indd","inf","info","ini","inv","iso","j2","jar","java","jpe","jpeg","jpg","js","json","jsp","jsx","key","kf8","kmk","ksh","kt","kts","kup","less","lex","licx","lisp","lit","lnk","lock","log","lua","m","m2v","m3u","m3u8","m4","m4a","m4r","m4v","map","master","mc","md","mdb","mdf","me","mi","mid","midi","mk","mkv","mm","mng","mo","mobi","mod","mov","mp2","mp3","mp4","mpa","mpd","mpe","mpeg","mpg","mpga","mpp","mpt","msg","msi","msu","nef","nes","nfo","nix","npmignore","ocx","odb","ods","odt","ogg","ogv","ost","otf","ott","ova","ovf","p12","p7b","pages","part","pcd","pdb","pdf","pem","pfx","pgp","ph","phar","php","pid","pkg","pl","plist","pm","png","po","pom","pot","potx","pps","ppsx","ppt","pptm","pptx","prop","ps","ps1","psd","psp","pst","pub","py","pyc","qt","ra","ram","rar","raw","rb","rdf","rdl","reg","resx","retry","rm","rom","rpm","rpt","rsa","rss","rst","rtf","ru","rub","sass","scss","sdf","sed","sh","sit","sitemap","skin","sldm","sldx","sln","sol","sphinx","sql","sqlite","step","stl","svg","swd","swf","swift","swp","sys","tar","tax","tcsh","tex","tfignore","tga","tgz","tif","tiff","tmp","tmx","torrent","tpl","ts","tsv","ttf","twig","txt","udf","vb","vbproj","vbs","vcd","vcf","vcs","vdi","vdx","vmdk","vob","vox","vscodeignore","vsd","vss","vst","vsx","vtx","war","wav","wbk","webinfo","webm","webp","wma","wmf","wmv","woff","woff2","wps","wsf","xaml","xcf","xfl","xlm","xls","xlsm","xlsx","xlt","xltm","xltx","xml","xpi","xps","xrb","xsd","xsl","xspf","xz","yaml","yml","z","zip","zsh"]:
-                
-                extension = "download"
-                
-        except Exception as _:
-            
-            extension = "download"
-        
-        return extension
 
     def get_deadline_string(deadline, now = datetime.datetime.now(pytz.utc), after=" sitten", before=" jäljellä"):
         if deadline is None:
@@ -126,7 +131,7 @@ def validate_user_access():
     g.start = timer()
     url = request.path
     if "/auth" in url:
-        g.conn = db.engine.connect(2)
+        g.conn = db.engine.connect()
     else:
         g.conn = db.engine.connect()
     
@@ -173,12 +178,13 @@ def cleanup(f):
     except Exception as _:
         app.logger.error("Error in closing connection", exc_info = True)
     try:
-        end = timer()
-        if g.start:
-            duration = (end - g.start)*1000
-            app.logger.info("Request to %s took %s ms", request.path, duration)
-        else:
-            app.logger.warning("g.start not set for some reason, url: %s", request.path)
+        if "static" not in request.url:
+            end = timer()
+            if g.start:
+                duration = (end - g.start)*1000
+                app.logger.info("Request to %s (%s) took %s ms", request.path, request.method, duration)
+            else:
+                app.logger.warning("g.start not set for some reason, url: %s", request.path)
     except Exception as _:
         app.logger.error("Error in request teardown", exc_info = True)
 
@@ -209,18 +215,28 @@ def update_element():
         app.logger.error(r, exc_info=True)
         return Response("", 400)
 
-@app.route("/get/<int:file_id>")
+@app.route("/get/<string:filename>")
 @login_required
-def get_file(file_id):
-    if not db.check_user_view_rights(g.conn, current_user.get_id(),file_id):
-        return Response("", status=403)      
+def get_file(filename):
+    file_id = request.args.get("id")
+    if file_id is None:
+        app.logger.error("Requested file without id ")
+        return app.response_class("id arg missing", 400)
+
+    if not db.check_user_view_rights(g.conn, current_user.get_id(), file_id):
+        abort(403)     
     bin_file, name = db.get_file(g.conn, file_id)
     if bin_file is None:
-        return Response("", status=204)
+        abort(404)
     buffer = io.BytesIO()
     buffer.write(bin_file)
     buffer.seek(0)
     db.insert_file_log(g.conn, [file_id], current_user.get_id(),"download")
-    return send_file(buffer, as_attachment=True, attachment_filename=name)
+    if str(request.args.get("force_download"))=="1" or ".html" in name or ".css" in name or ".js" in name:
+        return send_file(buffer, as_attachment=True, attachment_filename=name)
+    else:
+        response = send_file(buffer, attachment_filename=name)
+        response.headers["Content-Disposition"]='inline; filename="{}"'.format(name)
+        return response
 
 

@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  Käyttäjätiedot - 
+  {% endblock %}
+
+{% block body %}
+
+<div class="hori_wrapper add_border">
+  
+    
+<div class="small_wrapper add_border">
+  <form method="POST" target="{{url_for('.user_details')}}" id="update_user" style="width: 100%;">
+  <h5 >Käyttäjätiedot</h5>
+  <div class="form-group row full_width mt-4">
+    <div class="col-6">
+      <label for="first_name">Etunimi</label>
+    </div>
+    <div class="col-6">
+    {{form.first_name(value=current_user.first_name)}}
+  </div>
+</div>
+<div class="form-group row full_width">
+  <div class="col-6">
+    <label for="last_name">Sukunimi</label>
+  </div>
+  <div class="col-6">
+    {{form.last_name(value=current_user.last_name)}}
+</div>
+</div>
+
+<div class="form-group row full_width">
+  <div class="col-6">
+    <label for="username">Käyttäjänimi</label>
+  </div>
+  <div class="col-6">
+    {{form.username(value=current_user.name)}}
+  
+</div>
+</div>
+
+<div class="form-group row full_width">
+  <div class="col-6">
+    <ul>
+      {% for error in errors %}
+        <li>
+          <p class="error_text">{{error}}</p>
+        </li>
+      {% endfor %}
+    </ul>
+    
+  </div>
+  <div class="col-6">
+    <input type="submit" value="Päivitä" name="details">
+  
+</div>
+</div>
+</form>
+</div>
+
+<div class="small_wrapper add_border">
+  <form method="POST" target="{{url_for('.user_details')}}" id="update_user" style="width: 100%;">
+  <h5 >Salasana</h5>
+  <div class="form-group row full_width mt-4">
+    <div class="col-6">
+      <label for="first_name">Uusi salasana</label>
+    </div>
+    <div class="col-6">
+      {{form.password}}
+  </div>
+</div>
+<div class="form-group row full_width">
+  <div class="col-6">
+    <label for="last_name">Toista salasana</label>
+  </div>
+  <div class="col-6">
+  {{form.password2}}
+</div>
+</div>
+
+<div class="form-group row full_width">
+  <div class="col-6">
+    {% for error in password_errors %}
+    <li>
+      <p class="error_text">{{error}}</p>
+    </li>
+    {% endfor %}
+  </div>
+  <div class="col-6">
+    <input type="submit" value="Vaihda salasana" name="update_password">
+</div>
+</div>
+</form>
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+{% endblock %}

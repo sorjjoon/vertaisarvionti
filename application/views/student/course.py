@@ -10,7 +10,7 @@ import datetime
 import pytz
 from timeit import default_timer as timer
 from application.domain.course import Course
-from application import db
+from database import db
 
     
 

@@ -23,7 +23,7 @@ from .db_fixture import (conn, format_error, get_random_unicode, insert_users,
 
 
 def test_simple_assignment(conn, a_files = [], t_files=[]):
-    from application import db
+    from database import db
     from .course_test import test_course_insert
     id, code = test_course_insert(conn)
     student = db.get_user(conn, "oppilas", "oppilas")
@@ -93,7 +93,7 @@ def test_simple_assignment(conn, a_files = [], t_files=[]):
         assert null is None
     
 def test_course_set_assignment_visibility(conn, a_files = [], t_files=[]):
-    from application import db
+    from database import db
     from .course_test import test_course_insert
     id, _ = test_course_insert(conn)
     teacher = db.get_user(conn, "opettaja", "opettaja")
@@ -153,7 +153,7 @@ def test_course_set_assignment_visibility(conn, a_files = [], t_files=[]):
 
 
 def test_large_assignment_timezone_helsinki(conn, files = []):
-    from application import db
+    from database import db
     db.insert_user(conn, "opettaja1", "opettaja", "Who","Cares",role="TEACHER")
     db.insert_user(conn, "opettaja2", "opettaja", "Who","Cares",role="TEACHER")
     db.insert_user(conn, "opettaja3", "opettaja", "Who","Cares",role="TEACHER")
@@ -265,19 +265,6 @@ def test_large_assignment_timezone_helsinki(conn, files = []):
                 case.assertCountEqual(assignment_dic["tasks"],a.tasks)    
     return teachers
             
-def test_assignment_in_time(conn):
-    from application import db
-    from .course_test import test_course_insert
-    course_id, code = test_course_insert(conn)
-    student = db.get_user(conn, "oppilas", "oppilas")
-    teacher = db.get_user(conn, "opettaja", "opettaja")
-
-    assert student is not None
-    assert teacher is not None
-
-    db.enlist_student(conn, code, student.id)
-
-    
     
 
 def get_correct_assignment(a_id, assig_dics):
@@ -287,15 +274,41 @@ def get_correct_assignment(a_id, assig_dics):
     return None
 
 def test_simple_assignment_in_time(conn):
-    from application import db
+    from database import db
     teachers, students = insert_users(db, teacher_count=1, student_count=1)
     t = teachers[0]
     s= students[0]
+
     assert t
     assert s
-    name, deadline, reveal
     insert_random_courses(t.id, db, n=1)
+    course = db.select_courses_teacher(conn, teacher_id=t.id)[0]
+    assert course
+    name, deadline, reveal = random_assignment(course.id, t.id, hidden=False)
+    tasks =[random_task(0, []) for _ in range(4)]
 
+    assignment_id,_ = db.insert_assignment(conn, t.id, course.id, name, deadline, reveal, [], tasks=tasks)
+    
+    name2=name+"something"
+    deadline2 = random_datetime(start=datetime.datetime.utcnow()+datetime.timedelta(days=7))
+
+    _ = db.insert_assignment(conn, t.id, course.id, name2, deadline2, reveal,files=[], tasks=tasks)
+
+    assigment_ids = db.get_assignments_in_time(conn, t.id, [course.id], only_ids=True)
+
+    assert assigment_ids
+    assert len(assigment_ids)==1
+    assert assigment_ids[0] ==assignment_id
+    a = db.select_assignment(conn, assigment_ids[0])
+    assert a.name == name
+
+    assignments = db.get_assignments_in_time(conn, t.id, [course.id])
+
+    assert assignments
+    assert len(assignments)==1
+    assig = assignments[0]
+    assert a.id == assigment_ids[0]
+    assert assig==a
 
 def random_assignment(course_id, teacher_id, hidden=False):
     if hidden:

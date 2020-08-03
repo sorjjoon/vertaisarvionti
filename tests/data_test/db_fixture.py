@@ -133,8 +133,9 @@ def conn():
     ctx = app.app_context()
     
     ctx.push()
-    from application import db
+    from database import db
     conn = db.engine.connect()
+    
     yield conn
     conn.close()
 
